@@ -22,11 +22,7 @@ describe('Gallery', () => {
           selectFiles: () => null,
           deselectFiles: () => null,
           setPath: () => null,
-          setFolder: () => null,
-          setFile: () => null,
           sortFiles: () => null,
-          loadFolderContents: () => Promise.resolve(),
-          deleteItems: () => null,
         },
         queuedFiles: {
           addQueuedFile: () => null,

@@ -5,7 +5,6 @@ const initialState = {
   count: 0, // The number of files in the current view
   editorFields: [], // The input fields for editing files. Hardcoded until form field schema is implemented.
   file: null,
-  files: [],
   fileId: 0,
   folderId: 0,
   focus: false,
@@ -51,21 +50,6 @@ export default function galleryReducer(state = initialState, action) {
         count: typeof action.payload.count !== 'undefined' ? action.payload.count : state.count,
         files: nextFilesState.concat(state.files),
       }));
-    }
-
-    case GALLERY.REMOVE_FILES: {
-      if (typeof action.payload.ids === 'undefined') {
-        // No param was passed, remove everything.
-        nextState = deepFreeze(Object.assign({}, state, { count: 0, files: [] }));
-      } else {
-        // We're dealing with an array of ids
-        nextState = deepFreeze(Object.assign({}, state, {
-          count: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1).length,
-          files: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1),
-        }));
-      }
-
-      return nextState;
     }
 
     case GALLERY.LOAD_FILE_SUCCESS: {
@@ -120,15 +104,6 @@ export default function galleryReducer(state = initialState, action) {
       }));
     }
 
-    // De-select and remove the files listed in payload.ids
-    case GALLERY.DELETE_ITEM_SUCCESS: {
-      return deepFreeze(Object.assign({}, state, {
-        selectedFiles: state.selectedFiles.filter(id => action.payload.ids.indexOf(id) === -1),
-        files: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1),
-        count: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1).length,
-      }));
-    }
-
     case GALLERY.SORT_FILES: {
       const folders = state.files.filter(file => file.type === 'folder');
       const files = state.files.filter(file => file.type !== 'folder');
@@ -137,43 +112,6 @@ export default function galleryReducer(state = initialState, action) {
         files: folders.sort(action.payload.comparator).concat(files.sort(action.payload.comparator)),
       }));
     }
-
-    case GALLERY.LOAD_FOLDER_REQUEST: {
-      return deepFreeze(Object.assign({}, state, {
-        errorMessage: null,
-        // Mark "loaded" at the start of the request to avoid infinite loop of load events
-        folderId: action.payload.folderId,
-        selectedFiles: [],
-        files: [],
-        count: 0,
-        loading: true,
-      }));
-    }
-
-    case GALLERY.LOAD_FOLDER_SUCCESS: {
-      return deepFreeze(Object.assign({}, state, {
-        folder: action.payload.folder,
-        files: action.payload.files,
-        count: action.payload.files.length,
-        loading: false,
-      }));
-    }
-
-    case GALLERY.LOAD_FOLDER_FAILURE: {
-      return deepFreeze(Object.assign({}, state, {
-        errorMessage: action.payload.message,
-        loading: false,
-      }));
-    }
-
-    case GALLERY.ADD_FOLDER_REQUEST:
-      return state;
-
-    case GALLERY.ADD_FOLDER_FAILURE:
-      return state;
-
-    case GALLERY.ADD_FOLDER_SUCCESS:
-      return state;
 
     default:
       return state;

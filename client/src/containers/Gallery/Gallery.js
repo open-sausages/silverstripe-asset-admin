@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, compose } from 'redux';
 import ReactTestUtils from 'react-addons-test-utils';
 import Config from 'lib/Config';
 import Dropzone from 'components/AssetDropzone/AssetDropzone';
@@ -14,6 +14,9 @@ import BulkActions from 'components/BulkActions/BulkActions';
 import CONSTANTS from 'constants/index';
 import * as galleryActions from 'state/gallery/GalleryActions';
 import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
+import { graphql, withApollo} from 'react-apollo';
+import ApolloClient from 'apollo-client';
+import gql from 'graphql-tag';
 
 function getComparator(field, direction) {
   return (a, b) => {
@@ -91,30 +94,11 @@ export class Gallery extends Component {
   }
 
   componentDidMount() {
-    this.refreshFolderIfNeeded();
+    this.initSortDropdown();
   }
 
-  componentWillUpdate() {
-    const $select = $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
-    $select.off('change');
-  }
-
-  componentDidUpdate(prevProps) {
-    const $select = $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
-
-    // We opt-out of letting the CMS handle Chosen because it doesn't
-    // re-apply the behaviour correctly.
-    // So after the gallery has been rendered we apply Chosen.
-    $select.chosen({
-      allow_single_deselect: true,
-      disable_search_threshold: 20,
-    });
-
-    // Chosen stops the change event from reaching React so we have to simulate a click.
-    $select.on('change', () => ReactTestUtils.Simulate.click($select.find(':selected')[0]));
-
-    this.refreshFolderIfNeeded(prevProps);
-    this.checkLoadingIndicator();
+  componentDidUpdate() {
+    this.initSortDropdown();
   }
 
   getNoItemsNotice() {
@@ -150,11 +134,10 @@ export class Gallery extends Component {
 
   getBulkActionsComponent() {
     const deleteAction = (items) => {
-      const ids = items.map(item => item.id);
-      this.props.actions.gallery.deleteItems(this.props.deleteApi, ids);
+      items.forEach(item => this.props.onDelete(item.id));
     };
     const editAction = (items) => {
-      this.props.onOpenFile(items[0].id);
+      this.props.onOpenFile(items[0]);
     };
     const actions = CONSTANTS.BULK_ACTIONS.map(action => {
       if (action.value === 'delete' && !action.callback) {
@@ -195,26 +178,20 @@ export class Gallery extends Component {
     return null;
   }
 
-  checkLoadingIndicator() {
-    const $sectionWrapper = $('.cms-content.AssetAdmin');
+  initSortDropdown() {
+    const $select = $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
 
-    if (this.props.loading && !$sectionWrapper.hasClass('loading')) {
-      $sectionWrapper.addClass('loading');
-    } else if (!this.props.loading && $sectionWrapper.hasClass('loading')) {
-      $sectionWrapper.removeClass('loading');
-    }
-  }
+    // We opt-out of letting the CMS handle Chosen because it doesn't
+    // re-apply the behaviour correctly.
+    // So after the gallery has been rendered we apply Chosen.
+    $select.chosen({
+      allow_single_deselect: true,
+      disable_search_threshold: 20,
+    });
 
-  refreshFolderIfNeeded(prevProps) {
-    if (!prevProps || this.props.folderId !== prevProps.folderId) {
-      this.props.actions.gallery.deselectFiles();
-      this.props.actions.gallery.loadFolderContents(
-        this.props.readFolderApi,
-        this.props.folderId,
-        this.props.limit,
-        this.props.page
-      );
-    }
+    // Chosen stops the change event from reaching React so we have to simulate a click.
+    $select.off('change');
+    $select.on('change', () => ReactTestUtils.Simulate.click($select.find(':selected')[0]));
   }
 
   /**
@@ -262,13 +239,30 @@ export class Gallery extends Component {
    * @param {Object} event - Click event.
    */
   handleCreateFolder(event) {
-    const folderName = this.promptFolderName();
-    if (folderName) {
-      this.props.actions.gallery.createFolder(this.props.createFolderApi, this.props.folderId, folderName)
-        .then(data => {
-          this.props.actions.gallery.addFiles([data], 1);
-          return data;
-        });
+    const name = this.promptFolderName();
+    const parentId = parseInt(this.props.folder.id, 10);
+    if (name) {
+      const dataId = this.props.client.dataId({
+        __typename: 'Folder',
+        id: parentId,
+      });
+      this.props.mutate({
+        mutation: 'CreateFolder',
+        variables: {
+          folder: {
+            parentId,
+            name,
+          },
+        },
+        resultBehaviors: [
+          {
+            type: 'ARRAY_INSERT',
+            resultPath: ['createFolder'],
+            storePath: [dataId, 'children'],
+            where: 'PREPEND',
+          },
+        ],
+      });
     }
     event.preventDefault();
   }
@@ -302,10 +296,7 @@ export class Gallery extends Component {
    * @param {Object} item - The file or folder to delete.
    */
   handleItemDelete(event, item) {
-    // eslint-disable-next-line no-alert
-    if (confirm(i18n._t('AssetAdmin.CONFIRMDELETE'))) {
-      this.props.actions.gallery.deleteItems(this.props.deleteApi, [item.id]);
-    }
+    this.props.onDelete([item.id]);
   }
 
 	/**
@@ -334,7 +325,7 @@ export class Gallery extends Component {
    * @return {Boolean}
    */
   itemIsHighlighted(id) {
-    return this.props.fileId === id;
+    return this.props.highlightedFiles.indexOf(id) > -1;
   }
 
   /**
@@ -362,7 +353,7 @@ export class Gallery extends Component {
       return;
     }
 
-    this.props.onOpenFile(file.id, file);
+    this.props.onOpenFile(file);
   }
 
   /**
@@ -488,7 +479,7 @@ export class Gallery extends Component {
             handleSending={this.handleSending}
             handleUploadProgress={this.handleUploadProgress}
             preview={dimensions}
-            folderId={this.props.folderId}
+            folderId={this.props.folder.id}
             options={dropzoneOptions}
             securityID={securityID}
             uploadButton={false}
@@ -559,13 +550,16 @@ export class Gallery extends Component {
 
 Gallery.defaultProps = {
   bulkActions: true,
+  files: [],
+  selectedFiles: [],
+  highlightedFiles: [],
 };
 
 Gallery.propTypes = {
+  client: React.PropTypes.instanceOf(ApolloClient).isRequired,
+  mutate: React.PropTypes.func.isRequired,
   loading: React.PropTypes.bool,
   count: React.PropTypes.number,
-  fileId: React.PropTypes.number,
-  folderId: React.PropTypes.number.isRequired,
   folder: React.PropTypes.shape({
     id: React.PropTypes.number,
     parentID: React.PropTypes.number,
@@ -573,6 +567,7 @@ Gallery.propTypes = {
     canEdit: React.PropTypes.bool,
   }),
   files: React.PropTypes.array, // all files as full objects (incl. ids)
+  highlightedFiles: React.PropTypes.arrayOf(React.PropTypes.number), // ids only
   selectedFiles: React.PropTypes.arrayOf(React.PropTypes.number), // ids only
   bulkActions: React.PropTypes.bool,
   limit: React.PropTypes.number,
@@ -584,9 +579,7 @@ Gallery.propTypes = {
   onOpenFolder: React.PropTypes.func.isRequired,
   createFileApiUrl: React.PropTypes.string,
   createFileApiMethod: React.PropTypes.string,
-  createFolderApi: React.PropTypes.func,
-  readFolderApi: React.PropTypes.func,
-  deleteApi: React.PropTypes.func,
+  onDelete: React.PropTypes.func,
   actions: React.PropTypes.object,
   sectionConfig: React.PropTypes.shape({
     url: React.PropTypes.string,
@@ -597,18 +590,13 @@ Gallery.propTypes = {
 
 function mapStateToProps(state) {
   const {
-    loading,
     count,
-    files,
     selectedFiles,
     page,
     errorMessage,
   } = state.assetAdmin.gallery;
   return {
-    errorMessage,
-    loading,
     count,
-    files,
     selectedFiles,
     page,
     queuedFiles: state.assetAdmin.queuedFiles,
@@ -624,4 +612,39 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Gallery));
+// TODO Resolve fragment duplication with AssetAdmin
+const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
+  createFolder(folder: $folder) {
+	  ...allFields
+	  ...allFileFields
+  }
+}
+fragment allFields on FileInterface {
+	__typename
+	id
+	parentId
+	title
+	type
+	category
+	exists
+	name
+	filename
+	url
+	canView
+	canEdit
+	canDelete
+}
+fragment allFileFields on File {
+	__typename
+	extension
+	size
+}`;
+
+export { Gallery };
+
+export default compose(
+  graphql(createFolderMutation),
+  (component) => withApollo(component),
+  (component) => withRouter(component),
+  connect(mapStateToProps, mapDispatchToProps)
+)(Gallery);

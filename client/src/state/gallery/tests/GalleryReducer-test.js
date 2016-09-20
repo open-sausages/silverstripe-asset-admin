@@ -95,60 +95,6 @@ describe('galleryReducer', () => {
     });
   });
 
-  describe('REMOVE_FILES', () => {
-    const initialState = {
-      count: 3,
-      files: [{ id: 1 }, { id: 2 }, { id: 3 }],
-    };
-
-    it('should remove all files and set count to 0 if no param is given', () => {
-      const nextState = galleryReducer(initialState, {
-        type: GALLERY.REMOVE_FILES,
-        payload: {
-        },
-      });
-
-      expect(nextState.files.length).toBe(0);
-      expect(nextState.count).toBe(0);
-    });
-
-    it('should remove a single file from state', () => {
-      const nextState = galleryReducer(initialState, {
-        type: GALLERY.REMOVE_FILES,
-        payload: {
-          ids: [1],
-        },
-      });
-
-      expect(nextState.files.length).toBe(2);
-      expect(nextState.count).toBe(2);
-    });
-
-    it('should remove multiple files from the state', () => {
-      const nextState = galleryReducer(initialState, {
-        type: GALLERY.REMOVE_FILES,
-        payload: {
-          ids: [1, 2],
-        },
-      });
-
-      expect(nextState.files.length).toBe(1);
-      expect(nextState.count).toBe(1);
-    });
-
-    it('should do nothing if the given id is not in the state', () => {
-      const nextState = galleryReducer(initialState, {
-        type: GALLERY.REMOVE_FILES,
-        payload: {
-          ids: [4],
-        },
-      });
-
-      expect(nextState.files.length).toBe(3);
-      expect(nextState.count).toBe(3);
-    });
-  });
-
   describe('LOAD_FILE', () => {
     const type = GALLERY.LOAD_FILE_SUCCESS;
 

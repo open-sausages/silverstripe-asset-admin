@@ -43,7 +43,10 @@ class Editor extends Component {
     }
 
     if (name === 'action_delete') {
-      this.props.onDelete(data.ID);
+      // eslint-disable-next-line no-alert
+      if (confirm(i18n._t('AssetAdmin.CONFIRMDELETE'))) {
+        this.props.onDelete(data.ID);
+      }
       event.preventDefault();
       return;
     }
@@ -101,8 +104,8 @@ class Editor extends Component {
   }
 
   render() {
-    const formSchemaUrl = `${this.props.editFileSchemaUrl}/${this.props.fileId}`;
-    const modalSchemaUrl = `${this.props.addToCampaignSchemaUrl}/${this.props.fileId}`;
+    const formSchemaUrl = `${this.props.editFileSchemaUrl}/${this.props.file.id}`;
+    const modalSchemaUrl = `${this.props.addToCampaignSchemaUrl}/${this.props.file.id}`;
 
 
     return (<div className="panel panel--padded panel--scrollable form--no-dividers editor">
@@ -131,7 +134,9 @@ class Editor extends Component {
 }
 
 Editor.propTypes = {
-  fileId: React.PropTypes.number.isRequired,
+  file: React.PropTypes.shape({
+    id: React.PropTypes.number.isRequired,
+  }).isRequired,
   actions: React.PropTypes.object,
   onClose: React.PropTypes.func.isRequired,
   onSubmit: React.PropTypes.func.isRequired,
