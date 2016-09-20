@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, compose } from 'redux';
 import { withRouter } from 'react-router';
 import SilverStripeComponent from 'lib/SilverStripeComponent';
 import backend from 'lib/Backend';
@@ -13,6 +13,8 @@ import Editor from 'containers/Editor/Editor';
 import Gallery from 'containers/Gallery/Gallery';
 import Breadcrumb from 'components/Breadcrumb/Breadcrumb';
 import Toolbar from 'components/Toolbar/Toolbar';
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 
 class AssetAdmin extends SilverStripeComponent {
 
@@ -20,7 +22,7 @@ class AssetAdmin extends SilverStripeComponent {
     super();
     this.handleOpenFile = this.handleOpenFile.bind(this);
     this.handleCloseFile = this.handleCloseFile.bind(this);
-    this.delete = this.delete.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
     this.handleSubmitEditor = this.handleSubmitEditor.bind(this);
     this.handleOpenFolder = this.handleOpenFolder.bind(this);
     this.createEndpoint = this.createEndpoint.bind(this);
@@ -32,10 +34,7 @@ class AssetAdmin extends SilverStripeComponent {
     // In time, something like a GraphQL endpoint might be a better way to run.
     const sectionConfig = Config.getSection('SilverStripe\\AssetAdmin\\Controller\\AssetAdmin');
     this.endpoints = {
-      createFolderApi: this.createEndpoint(sectionConfig.createFolderEndpoint),
-      readFolderApi: this.createEndpoint(sectionConfig.readFolderEndpoint, false),
       updateFolderApi: this.createEndpoint(sectionConfig.updateFolderEndpoint),
-      deleteApi: this.createEndpoint(sectionConfig.deleteEndpoint),
     };
   }
 
@@ -69,7 +68,7 @@ class AssetAdmin extends SilverStripeComponent {
   handleBackButtonClick(event) {
     event.preventDefault();
     if (this.props.folder) {
-      this.handleOpenFolder(this.props.folder.parentID || 0);
+      this.handleOpenFolder(this.props.folder.parentId || 0);
     } else {
       this.handleOpenFolder(0);
     }
@@ -131,28 +130,28 @@ class AssetAdmin extends SilverStripeComponent {
   }
 
   handleFolderIcon(event) {
-    this.handleOpenFile(this.props.folderId);
+    this.handleOpenFile(this.props.folder.id);
 
     event.preventDefault();
   }
 
   handleOpenFile(fileId) {
     const base = this.props.sectionConfig.url;
-    this.props.router.push(`/${base}/show/${this.props.folderId}/edit/${fileId}`);
+    this.props.router.push(`/${base}/show/${this.props.folder.id}/edit/${fileId}`);
   }
 
   handleSubmitEditor(event, fieldValues, submitFn) {
     event.preventDefault();
     submitFn()
       .then((response) => {
-        this.props.actions.gallery.loadFile(this.props.fileId, response.record);
+        this.props.actions.gallery.loadFile(this.props.file.id, response.record);
 
         return response;
       });
   }
 
   handleCloseFile() {
-    this.handleOpenFolder(this.props.folderId);
+    this.handleOpenFolder(this.props.folder.id);
   }
 
   handleOpenFolder(folderId) {
@@ -165,7 +164,7 @@ class AssetAdmin extends SilverStripeComponent {
    *
    * @param {number} fileId
    */
-  delete(fileId) {
+  handleDelete(fileId) {
     let file = this.props.files.find((next) => next.id === fileId);
     if (!file && this.props.folder && this.props.folder.id === fileId) {
       file = this.props.folder;
@@ -175,62 +174,79 @@ class AssetAdmin extends SilverStripeComponent {
     }
     const parentId = file.parent ? file.parent.id : 0;
 
-    // eslint-disable-next-line no-alert
-    if (confirm(i18n._t('AssetAdmin.CONFIRMDELETE'))) {
-      this.props.actions.gallery.deleteItems(this.endpoints.deleteApi, [file.id])
-        .then(() => {
-          const base = this.props.sectionConfig.url;
-          this.props.router.push(`/${base}/show/${parentId}`);
-        });
-    }
+    this.props.mutate({
+      mutation: 'DeleteFile',
+      variables: {
+        id: file.id,
+      },
+      resultBehaviors: [
+        {
+          type: 'DELETE',
+          dataId: `File:${file.id}`,
+        },
+      ],
+    }).then(() => {
+      this.props.actions.gallery.deselectFiles([file.id]);
+
+      // Route to parent folder (in case the currently viewed file was deleted)
+      const base = this.props.sectionConfig.url;
+      this.props.router.push(`/${base}/show/${parentId}`);
+    });
   }
 
   render() {
     const sectionConfig = this.props.sectionConfig;
     const createFileApiUrl = sectionConfig.createFileEndpoint.url;
     const createFileApiMethod = sectionConfig.createFileEndpoint.method;
-    const file = this.props.files.find((next) => next.id === parseInt(this.props.fileId, 10));
 
-    const editor = ((file || this.props.fileId === this.props.folderId) &&
+    // Loading indicator
+    const $sectionWrapper = $('.cms-content.AssetAdmin');
+    if(this.props.loading) {
+      $sectionWrapper.addClass('loading');
+    } else {
+      $sectionWrapper.removeClass('loading');
+    }
+
+    const editor = (this.props.file &&
       <Editor
-        fileId={this.props.fileId}
+        file={this.props.file}
         onClose={this.handleCloseFile}
         editFileSchemaUrl={sectionConfig.form.FileEditForm.schemaUrl}
         actions={this.props.actions.editor}
         onSubmit={this.handleSubmitEditor}
-        onDelete={this.delete}
+        onDelete={this.handleDelete}
         addToCampaignSchemaUrl={sectionConfig.form.AddToCampaignForm.schemaUrl}
+      />
+    );
+    const gallery = (this.props.folder &&
+      <Gallery
+        files={this.props.files}
+        fileId={this.props.params.fileId}
+        folder={this.props.folder}
+        name={this.props.name}
+        limit={this.props.limit}
+        page={this.props.page}
+        bulkActions={this.props.bulkActions}
+        createFileApiUrl={createFileApiUrl}
+        createFileApiMethod={createFileApiMethod}
+        updateFolderApi={this.endpoints.updateFolderApi}
+        onDelete={this.handleDelete}
+        onOpenFile={this.handleOpenFile}
+        onOpenFolder={this.handleOpenFolder}
+        sectionConfig={this.props.sectionConfig}
       />
     );
 
     const showBackButton = !!(this.props.folder && this.props.folder.id);
 
     return (
-      <div className="fill-height">
+      <div className="fill-height cms-gallery no-preview collapse in">
         <Toolbar showBackButton={showBackButton} handleBackButtonClick={this.handleBackButtonClick}>
           <Breadcrumb multiline crumbs={this.props.breadcrumbs} />
         </Toolbar>
         <div className="flexbox-area-grow fill-width gallery">
           {editor}
-          <Gallery
-            files={this.props.files}
-            fileId={this.props.fileId}
-            folderId={this.props.folderId}
-            folder={this.props.folder}
-            name={this.props.name}
-            limit={this.props.limit}
-            page={this.props.page}
-            bulkActions={this.props.bulkActions}
-            createFileApiUrl={createFileApiUrl}
-            createFileApiMethod={createFileApiMethod}
-            createFolderApi={this.endpoints.createFolderApi}
-            readFolderApi={this.endpoints.readFolderApi}
-            updateFolderApi={this.endpoints.updateFolderApi}
-            deleteApi={this.endpoints.deleteApi}
-            onOpenFile={this.handleOpenFile}
-            onOpenFolder={this.handleOpenFolder}
-            sectionConfig={this.props.sectionConfig}
-          />
+          {gallery}
         </div>
       </div>
     );
@@ -238,6 +254,7 @@ class AssetAdmin extends SilverStripeComponent {
 }
 
 AssetAdmin.propTypes = {
+  mutate: React.PropTypes.func.isRequired,
   config: React.PropTypes.shape({
     forms: React.PropTypes.shape({
       editForm: React.PropTypes.shape({
@@ -249,6 +266,7 @@ AssetAdmin.propTypes = {
     url: React.PropTypes.string,
   }),
   file: React.PropTypes.object,
+  files: React.PropTypes.array, // all files as full objects (incl. ids)
   folder: React.PropTypes.shape({
     id: React.PropTypes.number,
     title: React.PropTypes.string,
@@ -262,16 +280,14 @@ AssetAdmin.propTypes = {
 function mapStateToProps(state, ownProps) {
   const sectionConfigKey = 'SilverStripe\\AssetAdmin\\Controller\\AssetAdmin';
   const sectionConfig = state.config.sections[sectionConfigKey];
-  const folder = state.assetAdmin.gallery.folder;
-  const files = state.assetAdmin.gallery.files;
+  const file = (ownProps.params.fileId && ownProps.files &&
+    ownProps.files.find((next) => next.id === parseInt(ownProps.params.fileId, 10))
+  );
 
   return {
+    file,
     breadcrumbs: state.breadcrumbs,
     sectionConfig,
-    fileId: parseInt(ownProps.params.fileId, 10),
-    folderId: parseInt(ownProps.params.folderId, 10),
-    files,
-    folder,
     limit: sectionConfig.limit,
   };
 }
@@ -286,4 +302,69 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(AssetAdmin));
+// GraphQL Query
+const readFilesQuery = gql`query ReadFiles($id:ID!) {
+  readFiles(id: $id) {
+    ...allFields
+    ...allFileFields
+    ...on Folder {
+      children {
+        ...allFields
+	      ...allFileFields
+      },
+      parents {
+        __typename
+        id
+        title
+      }
+    }
+  }
+}
+fragment allFields on FileInterface {
+  __typename
+  id
+  parentId
+  title
+  exists
+  name
+  filename
+  url
+  canView
+  canEdit
+  canDelete
+}
+fragment allFileFields on File {
+	__typename
+	type
+	extension
+	size
+}
+`;
+const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
+  updateFile(id: $id, file: $file) {
+    id
+  }
+}`;
+const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
+  deleteFile(id: $id)
+}`;
+
+export default compose(
+  graphql(readFilesQuery, {
+    options(props) {
+      return { variables: { id: props.params.folderId }};
+    },
+    props({ data: { loading, readFiles } }) {
+      return {
+        loading,
+        // Uses same query as search and file list to return a single result (the containing folder)
+        folder: (readFiles && readFiles[0]) ? readFiles[0] : null,
+        files: (readFiles && readFiles[0]) ? readFiles[0].children : [],
+      };
+    },
+  }),
+  graphql(updateFileMutation),
+  graphql(deleteFileMutation),
+  (component) => withRouter(component),
+  connect(mapStateToProps, mapDispatchToProps)
+)(AssetAdmin);

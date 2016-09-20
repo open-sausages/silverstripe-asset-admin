@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, compose } from 'redux';
 import ReactTestUtils from 'react-addons-test-utils';
 import Config from 'lib/Config';
 import Dropzone from 'components/AssetDropzone/AssetDropzone';
@@ -14,6 +14,8 @@ import BulkActions from 'components/BulkActions/BulkActions';
 import CONSTANTS from 'constants/index';
 import * as galleryActions from 'state/gallery/GalleryActions';
 import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
+import { graphql } from 'react-apollo';
+import gql from 'graphql-tag';
 
 function getComparator(field, direction) {
   return (a, b) => {
@@ -90,10 +92,6 @@ export class Gallery extends Component {
     this.handleCreateFolder = this.handleCreateFolder.bind(this);
   }
 
-  componentDidMount() {
-    this.refreshFolderIfNeeded();
-  }
-
   componentWillUpdate() {
     const $select = $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
     $select.off('change');
@@ -112,9 +110,6 @@ export class Gallery extends Component {
 
     // Chosen stops the change event from reaching React so we have to simulate a click.
     $select.on('change', () => ReactTestUtils.Simulate.click($select.find(':selected')[0]));
-
-    this.refreshFolderIfNeeded(prevProps);
-    this.checkLoadingIndicator();
   }
 
   getNoItemsNotice() {
@@ -150,8 +145,7 @@ export class Gallery extends Component {
 
   getBulkActionsComponent() {
     const deleteAction = (items) => {
-      const ids = items.map(item => item.id);
-      this.props.actions.gallery.deleteItems(this.props.deleteApi, ids);
+      items.forEach(item => this.props.onDelete(item.id));
     };
     const editAction = (items) => {
       this.props.onOpenFile(items[0].id);
@@ -193,28 +187,6 @@ export class Gallery extends Component {
     }
 
     return null;
-  }
-
-  checkLoadingIndicator() {
-    const $sectionWrapper = $('.cms-content.AssetAdmin');
-
-    if (this.props.loading && !$sectionWrapper.hasClass('loading')) {
-      $sectionWrapper.addClass('loading');
-    } else if (!this.props.loading && $sectionWrapper.hasClass('loading')) {
-      $sectionWrapper.removeClass('loading');
-    }
-  }
-
-  refreshFolderIfNeeded(prevProps) {
-    if (!prevProps || this.props.folderId !== prevProps.folderId) {
-      this.props.actions.gallery.deselectFiles();
-      this.props.actions.gallery.loadFolderContents(
-        this.props.readFolderApi,
-        this.props.folderId,
-        this.props.limit,
-        this.props.page
-      );
-    }
   }
 
   /**
@@ -263,12 +235,25 @@ export class Gallery extends Component {
    */
   handleCreateFolder(event) {
     const folderName = this.promptFolderName();
+    const parentId = this.props.folder.id;
     if (folderName) {
-      this.props.actions.gallery.createFolder(this.props.createFolderApi, this.props.folderId, folderName)
-        .then(data => {
-          this.props.actions.gallery.addFiles([data], 1);
-          return data;
-        });
+      this.props.mutate({
+        mutation: 'CreateFolder',
+        variables: {
+          folder: {
+            parentId,
+            name: folderName,
+          },
+        },
+        resultBehaviors: [
+          {
+            type: 'ARRAY_INSERT',
+            resultPath: ['createFolder'],
+            storePath: [`ROOT_QUERY.readFiles({"id":"${parentId}"}).0`, 'children'],
+            where: 'APPEND',
+          },
+        ],
+      });
     }
     event.preventDefault();
   }
@@ -302,10 +287,7 @@ export class Gallery extends Component {
    * @param {Object} item - The file or folder to delete.
    */
   handleItemDelete(event, item) {
-    // eslint-disable-next-line no-alert
-    if (confirm(i18n._t('AssetAdmin.CONFIRMDELETE'))) {
-      this.props.actions.gallery.deleteItems(this.props.deleteApi, [item.id]);
-    }
+    this.props.onDelete([item.id]);
   }
 
 	/**
@@ -488,7 +470,7 @@ export class Gallery extends Component {
             handleSending={this.handleSending}
             handleUploadProgress={this.handleUploadProgress}
             preview={dimensions}
-            folderId={this.props.folderId}
+            folderId={this.props.folder.id}
             options={dropzoneOptions}
             securityID={securityID}
             uploadButton={false}
@@ -562,10 +544,10 @@ Gallery.defaultProps = {
 };
 
 Gallery.propTypes = {
+  mutate: React.PropTypes.func.isRequired,
   loading: React.PropTypes.bool,
   count: React.PropTypes.number,
   fileId: React.PropTypes.number,
-  folderId: React.PropTypes.number.isRequired,
   folder: React.PropTypes.shape({
     id: React.PropTypes.number,
     parentID: React.PropTypes.number,
@@ -584,9 +566,7 @@ Gallery.propTypes = {
   onOpenFolder: React.PropTypes.func.isRequired,
   createFileApiUrl: React.PropTypes.string,
   createFileApiMethod: React.PropTypes.string,
-  createFolderApi: React.PropTypes.func,
-  readFolderApi: React.PropTypes.func,
-  deleteApi: React.PropTypes.func,
+  onDelete: React.PropTypes.func,
   actions: React.PropTypes.object,
   sectionConfig: React.PropTypes.shape({
     url: React.PropTypes.string,
@@ -596,18 +576,13 @@ Gallery.propTypes = {
 
 function mapStateToProps(state) {
   const {
-    loading,
     count,
-    files,
     selectedFiles,
     page,
     errorMessage,
   } = state.assetAdmin.gallery;
   return {
-    errorMessage,
-    loading,
     count,
-    files,
     selectedFiles,
     page,
     queuedFiles: state.assetAdmin.queuedFiles,
@@ -623,4 +598,19 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Gallery));
+const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
+  createFolder(folder: $folder) {
+    id
+    name
+    title
+    parentId
+  }
+}`;
+
+export { Gallery };
+
+export default compose(
+  graphql(createFolderMutation),
+  (component) => withRouter(component),
+  connect(mapStateToProps, mapDispatchToProps)
+)(Gallery);
