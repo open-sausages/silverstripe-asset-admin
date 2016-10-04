@@ -35,6 +35,7 @@ module.exports = {
     filename: 'js/[name].js',
   },
   externals: {
+    'apollo-client': 'ApolloClient',
     'components/Breadcrumb/Breadcrumb': 'Breadcrumb',
     'components/FormBuilderModal/FormBuilderModal': 'FormBuilderModal',
     'components/FormBuilder/FormBuilder': 'FormBuilder',

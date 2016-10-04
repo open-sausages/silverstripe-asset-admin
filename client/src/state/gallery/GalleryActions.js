@@ -72,37 +72,3 @@ export function sortFiles(comparator) {
     });
 }
 
-/**
- * Create a new folder as a sub-folder of the current and open it for viewing.
- * Triggers an asyncrhonous back-end requests and changes view after the request
- * has completed.
- *
- * @param {Function} createFolderApi
- * @param {Number} parentId
- * @param {String} name - the name of the folder
- */
-export function createFolder(createFolderApi, parentId, name) {
-  return (dispatch) => {
-    // Start message
-    dispatch({
-      type: GALLERY.CREATE_FOLDER_REQUEST,
-      payload: { name },
-    });
-
-    return createFolderApi({ ParentID: isNaN(parentId) ? 0 : parentId, Name: name })
-    .then((json) => {
-      dispatch({
-        type: GALLERY.CREATE_FOLDER_SUCCESS,
-        payload: { name },
-      });
-      return json;
-    })
-    .catch((err) => {
-      // Failure finish message
-      dispatch({
-        type: GALLERY.CREATE_FOLDER_FAILURE,
-        payload: { error: `Couldn\'t create ${name}: ${err}` },
-      });
-    });
-  };
-}

@@ -5,7 +5,6 @@ const initialState = {
   count: 0, // The number of files in the current view
   editorFields: [], // The input fields for editing files. Hardcoded until form field schema is implemented.
   file: null,
-  files: [],
   fileId: 0,
   folderId: 0,
   focus: false,
@@ -51,21 +50,6 @@ export default function galleryReducer(state = initialState, action) {
         count: typeof action.payload.count !== 'undefined' ? action.payload.count : state.count,
         files: nextFilesState.concat(state.files),
       }));
-    }
-
-    case GALLERY.REMOVE_FILES: {
-      if (typeof action.payload.ids === 'undefined') {
-        // No param was passed, remove everything.
-        nextState = deepFreeze(Object.assign({}, state, { count: 0, files: [] }));
-      } else {
-        // We're dealing with an array of ids
-        nextState = deepFreeze(Object.assign({}, state, {
-          count: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1).length,
-          files: state.files.filter(file => action.payload.ids.indexOf(file.id) === -1),
-        }));
-      }
-
-      return nextState;
     }
 
     case GALLERY.LOAD_FILE_SUCCESS: {
@@ -128,15 +112,6 @@ export default function galleryReducer(state = initialState, action) {
         files: folders.sort(action.payload.comparator).concat(files.sort(action.payload.comparator)),
       }));
     }
-
-    case GALLERY.ADD_FOLDER_REQUEST:
-      return state;
-
-    case GALLERY.ADD_FOLDER_FAILURE:
-      return state;
-
-    case GALLERY.ADD_FOLDER_SUCCESS:
-      return state;
 
     default:
       return state;

@@ -14,7 +14,8 @@ import BulkActions from 'components/BulkActions/BulkActions';
 import CONSTANTS from 'constants/index';
 import * as galleryActions from 'state/gallery/GalleryActions';
 import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
-import { graphql } from 'react-apollo';
+import { graphql, withApollo} from 'react-apollo';
+import ApolloClient from 'apollo-client';
 import gql from 'graphql-tag';
 
 function getComparator(field, direction) {
@@ -234,23 +235,27 @@ export class Gallery extends Component {
    * @param {Object} event - Click event.
    */
   handleCreateFolder(event) {
-    const folderName = this.promptFolderName();
-    const parentId = this.props.folder.id;
-    if (folderName) {
+    const name = this.promptFolderName();
+    const parentId = parseInt(this.props.folder.id, 10);
+    if (name) {
+      const dataId = this.props.client.dataId({
+        __typename: 'Folder',
+        id: parentId,
+      });
       this.props.mutate({
         mutation: 'CreateFolder',
         variables: {
           folder: {
             parentId,
-            name: folderName,
+            name,
           },
         },
         resultBehaviors: [
           {
             type: 'ARRAY_INSERT',
             resultPath: ['createFolder'],
-            storePath: [`ROOT_QUERY.readFiles({"id":"${parentId}"}).0`, 'children'],
-            where: 'APPEND',
+            storePath: [dataId, 'children'],
+            where: 'PREPEND',
           },
         ],
       });
@@ -541,9 +546,11 @@ export class Gallery extends Component {
 
 Gallery.defaultProps = {
   bulkActions: true,
+  files: [],
 };
 
 Gallery.propTypes = {
+  client: React.PropTypes.instanceOf(ApolloClient).isRequired,
   mutate: React.PropTypes.func.isRequired,
   loading: React.PropTypes.bool,
   count: React.PropTypes.number,
@@ -600,6 +607,7 @@ function mapDispatchToProps(dispatch) {
 
 const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
   createFolder(folder: $folder) {
+    __typename
     id
     name
     title
@@ -611,6 +619,7 @@ export { Gallery };
 
 export default compose(
   graphql(createFolderMutation),
+  (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)
 )(Gallery);

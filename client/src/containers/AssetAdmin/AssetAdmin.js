@@ -13,7 +13,7 @@ import Editor from 'containers/Editor/Editor';
 import Gallery from 'containers/Gallery/Gallery';
 import Breadcrumb from 'components/Breadcrumb/Breadcrumb';
 import Toolbar from 'components/Toolbar/Toolbar';
-import { graphql } from 'react-apollo';
+import { graphql, withApollo } from 'react-apollo';
 import gql from 'graphql-tag';
 
 class AssetAdmin extends SilverStripeComponent {
@@ -173,6 +173,10 @@ class AssetAdmin extends SilverStripeComponent {
       throw new Error('File selected for deletion cannot be found');
     }
     const parentId = file.parent ? file.parent.id : 0;
+	const dataId = this.props.client.dataId({
+      __typename: file.__typename,
+      id: file.id,
+    });
 
     this.props.mutate({
       mutation: 'DeleteFile',
@@ -182,7 +186,7 @@ class AssetAdmin extends SilverStripeComponent {
       resultBehaviors: [
         {
           type: 'DELETE',
-          dataId: `File:${file.id}`,
+          dataId,
         },
       ],
     }).then(() => {
@@ -325,6 +329,8 @@ fragment allFields on FileInterface {
   id
   parentId
   title
+	type
+  category
   exists
   name
   filename
@@ -335,7 +341,6 @@ fragment allFields on FileInterface {
 }
 fragment allFileFields on File {
 	__typename
-	type
 	extension
 	size
 }
@@ -365,6 +370,7 @@ export default compose(
   }),
   graphql(updateFileMutation),
   graphql(deleteFileMutation),
+  (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)
 )(AssetAdmin);
