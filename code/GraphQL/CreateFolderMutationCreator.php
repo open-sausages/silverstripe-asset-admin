@@ -51,14 +51,15 @@ class CreateFolderMutationCreator extends MutationCreator {
 
     public function resolve($object, array $args, $context, $info)
     {
-        $parent = Versioned::get_one_by_stage(Folder::class, 'Stage', $args['folder']['parentId']);
-
-        if(!$parent) {
-            throw new \InvalidArgumentException(sprintf(
-                '%s#%s not found',
-                Folder::class,
-                $args['parentId']
-            ));
+        if(isset($args['folder']['parentId']) && (int)$args['folder']['parentId'] > 0) {
+            $parent = Versioned::get_one_by_stage(Folder::class, 'Stage', $args['folder']['parentId']);
+            if(!$parent) {
+                throw new \InvalidArgumentException(sprintf(
+                    '%s#%s not found',
+                    Folder::class,
+                    $args['folder']['parentId']
+                ));
+            }
         }
 
         $folder = Folder::create();
