@@ -38,6 +38,12 @@ class FileInterfaceTypeCreator extends DataObjectInterfaceTypeCreator {
             'title' => [
                 'type' => Type::string(),
             ],
+            'type' => [
+                'type' => Type::string(),
+            ],
+            'category' => [
+                'type' => Type::string(),
+            ],
             'exists' => [
                 'type' => Type::boolean(),
             ],
