@@ -173,7 +173,7 @@ class AssetAdmin extends SilverStripeComponent {
       throw new Error('File selected for deletion cannot be found');
     }
     const parentId = file.parent ? file.parent.id : 0;
-	const dataId = this.props.client.dataId({
+    const dataId = this.props.client.dataId({
       __typename: file.__typename,
       id: file.id,
     });
@@ -194,7 +194,11 @@ class AssetAdmin extends SilverStripeComponent {
 
       // Route to parent folder (in case the currently viewed file was deleted)
       const base = this.props.sectionConfig.url;
-      this.props.router.push(`/${base}/show/${parentId}`);
+      const isCurrentFile = !!(this.props.file && file.id === this.props.file.id);
+      const isCurrentFolder = !!(this.props.folder && file.id === this.props.folder.id);
+      if (isCurrentFile || isCurrentFolder) {
+        this.props.router.push(`/${base}/show/${parentId}`);
+      }
     });
   }
 
