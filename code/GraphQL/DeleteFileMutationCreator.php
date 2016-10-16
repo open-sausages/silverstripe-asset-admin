@@ -51,8 +51,8 @@ class DeleteFileMutationCreator extends MutationCreator {
 //            ));
 //        }
 
-        $file->deleteFromStage('Stage');
-        $file->deleteFromStage('Live');
+//        $file->deleteFromStage('Stage');
+//        $file->deleteFromStage('Live');
 
         return $args['id'];
     }

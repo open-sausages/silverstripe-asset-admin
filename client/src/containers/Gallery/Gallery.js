@@ -14,9 +14,6 @@ import BulkActions from 'components/BulkActions/BulkActions';
 import CONSTANTS from 'constants/index';
 import * as galleryActions from 'state/gallery/GalleryActions';
 import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
-import { graphql, withApollo} from 'react-apollo';
-import ApolloClient from 'apollo-client';
-import gql from 'graphql-tag';
 
 function getComparator(field, direction) {
   return (a, b) => {
@@ -550,9 +547,6 @@ Gallery.defaultProps = {
 };
 
 Gallery.propTypes = {
-  client: React.PropTypes.instanceOf(ApolloClient).isRequired,
-  mutate: React.PropTypes.func.isRequired,
-  loading: React.PropTypes.bool,
   count: React.PropTypes.number,
   fileId: React.PropTypes.number,
   folder: React.PropTypes.shape({
@@ -605,21 +599,19 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
-  createFolder(folder: $folder) {
-    __typename
-    id
-    name
-    title
-    parentId
-  }
-}`;
+// const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
+//   createFolder(folder: $folder) {
+//     __typename
+//     id
+//     name
+//     title
+//     parentId
+//   }
+// }`;
 
 export { Gallery };
 
 export default compose(
-  graphql(createFolderMutation),
-  (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)
 )(Gallery);

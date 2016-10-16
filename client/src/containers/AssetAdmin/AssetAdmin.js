@@ -13,8 +13,7 @@ import Editor from 'containers/Editor/Editor';
 import Gallery from 'containers/Gallery/Gallery';
 import Breadcrumb from 'components/Breadcrumb/Breadcrumb';
 import Toolbar from 'components/Toolbar/Toolbar';
-import { graphql, withApollo } from 'react-apollo';
-import gql from 'graphql-tag';
+import Relay from 'react-relay';
 
 class AssetAdmin extends SilverStripeComponent {
 
@@ -311,70 +310,66 @@ function mapDispatchToProps(dispatch) {
 }
 
 // GraphQL Query
-const readFilesQuery = gql`query ReadFiles($id:ID!) {
-  readFiles(id: $id) {
-    ...allFields
-    ...allFileFields
-    ...on Folder {
-      children {
-        ...allFields
-	      ...allFileFields
-      },
-      parents {
-        __typename
-        id
-        title
-      }
-    }
-  }
-}
-fragment allFields on FileInterface {
-  __typename
-  id
-  parentId
-  title
-	type
-  category
-  exists
-  name
-  filename
-  url
-  canView
-  canEdit
-  canDelete
-}
-fragment allFileFields on File {
-	__typename
-	extension
-	size
-}
-`;
-const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
-  updateFile(id: $id, file: $file) {
-    id
-  }
-}`;
-const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
-  deleteFile(id: $id)
-}`;
-
-export default compose(
-  graphql(readFilesQuery, {
-    options(props) {
-      return { variables: { id: props.params.folderId }};
+// const readFilesQuery = gql`query ReadFiles($id:ID!) {
+//   readFiles(id: $id) {
+//     ...allFields
+//     ...allFileFields
+//     ...on Folder {
+//       children {
+//         ...allFields
+// 	      ...allFileFields
+//       },
+//       parents {
+//         __typename
+//         id
+//         title
+//       }
+//     }
+//   }
+// }
+// fragment allFields on FileInterface {
+//   __typename
+//   id
+//   parentId
+//   title
+// 	type
+//   category
+//   exists
+//   name
+//   filename
+//   url
+//   canView
+//   canEdit
+//   canDelete
+// }
+// fragment allFileFields on File {
+// 	__typename
+// 	extension
+// 	size
+// }
+// `;
+export default Relay.createContainer(
+  compose(
+    (component) => withRouter(component),
+    connect(mapStateToProps, mapDispatchToProps)
+  )(AssetAdmin),
+  {
+    fragments: {
+	    files: () => Relay.QL`fragment on FileInterface {
+		    __typename
+		    id
+		    parentId
+		    title
+		    type
+		    category
+		    exists
+		    name
+		    filename
+		    url
+		    canView
+		    canEdit
+		    canDelete
+	    }`
     },
-    props({ data: { loading, readFiles } }) {
-      return {
-        loading,
-        // Uses same query as search and file list to return a single result (the containing folder)
-        folder: (readFiles && readFiles[0]) ? readFiles[0] : null,
-        files: (readFiles && readFiles[0]) ? readFiles[0].children : [],
-      };
-    },
-  }),
-  graphql(updateFileMutation),
-  graphql(deleteFileMutation),
-  (component) => withApollo(component),
-  (component) => withRouter(component),
-  connect(mapStateToProps, mapDispatchToProps)
-)(AssetAdmin);
+  },
+);

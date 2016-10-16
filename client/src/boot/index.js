@@ -6,6 +6,7 @@ import galleryReducer from 'state/gallery/GalleryReducer';
 import queuedFilesReducer from 'state/queuedFiles/QueuedFilesReducer';
 import editorReducer from 'state/editor/EditorReducer';
 import AssetAdmin from 'containers/AssetAdmin/AssetAdmin';
+import ReadFilesRelayRoute from 'relayRoutes/ReadFilesRelayRoute';
 
 document.addEventListener('DOMContentLoaded', () => {
   const sectionConfig = Config.getSection('SilverStripe\\AssetAdmin\\Controller\\AssetAdmin');
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         component: AssetAdmin,
       },
     ],
+    queries: { ReadFilesRelayRoute },
   });
 
   reducerRegister.add('assetAdmin', combineReducers({

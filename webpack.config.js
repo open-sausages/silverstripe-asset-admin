@@ -25,7 +25,7 @@ const SUPPORTED_BROWSERS = [
 
 module.exports = {
   entry: {
-    'bundle': `${PATHS.MODULE_JS_SRC}/bundles/bundle.js`,
+    bundle: `${PATHS.MODULE_JS_SRC}/bundles/bundle.js`,
   },
   resolve: {
     modulesDirectories: [PATHS.MODULE_JS_SRC, PATHS.MODULES],
@@ -35,14 +35,13 @@ module.exports = {
     filename: 'js/[name].js',
   },
   externals: {
-    'apollo-client': 'ApolloClient',
+    'react-relay': 'ReactRelay',
     'components/Breadcrumb/Breadcrumb': 'Breadcrumb',
     'components/FormBuilderModal/FormBuilderModal': 'FormBuilderModal',
     'components/FormBuilder/FormBuilder': 'FormBuilder',
     'components/Toolbar/Toolbar': 'Toolbar',
     'state/breadcrumbs/BreadcrumbsActions': 'BreadcrumbsActions',
     'deep-freeze-strict': 'DeepFreezeStrict',
-    'graphql-tag': 'GraphQLTag',
     i18n: 'i18n',
     jQuery: 'jQuery',
     'lib/Backend': 'Backend',
@@ -53,7 +52,6 @@ module.exports = {
     'lib/ReactRouteRegister': 'ReactRouteRegister',
     'lib/SilverStripeComponent': 'SilverStripeComponent',
     'page.js': 'Page',
-    'react-apollo': 'ReactApollo',
     'react-addons-css-transition-group': 'ReactAddonsCssTransitionGroup',
     'react-addons-test-utils': 'ReactAddonsTestUtils',
     'react-dom': 'ReactDom',
@@ -72,7 +70,7 @@ module.exports = {
         exclude: /(node_modules|thirdparty)/,
         loader: 'babel',
         query: {
-          presets: ['es2015', 'react'],
+          presets: ['es2015', 'react', 'stage-0'],
           plugins: ['transform-object-assign'/* , 'transform-object-rest-spread' */],
           comments: false,
         },
