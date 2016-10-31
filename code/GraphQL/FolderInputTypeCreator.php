@@ -2,10 +2,10 @@
 
 namespace SilverStripe\AssetAdmin\GraphQL;
 
-use Chillu\GraphQL\Util\CaseInsensitiveFieldAccessor;
+use SilverStripe\GraphQL\Util\CaseInsensitiveFieldAccessor;
 use GraphQL\Type\Definition\Type;
-use Chillu\GraphQL\TypeCreator;
-use Chillu\GraphQL\Manager;
+use SilverStripe\GraphQL\TypeCreator;
+use SilverStripe\GraphQL\Manager;
 
 class FolderInputTypeCreator extends TypeCreator {
 

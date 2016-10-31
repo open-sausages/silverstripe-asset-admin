@@ -5,7 +5,7 @@ use SilverStripe\Assets\File;
 use SilverStripe\Assets\Folder;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\UnionType;
-use Chillu\GraphQL\QueryCreator;
+use SilverStripe\GraphQL\QueryCreator;
 use SilverStripe\ORM\Versioning\Versioned;
 
 class ReadFileQueryCreator extends QueryCreator {

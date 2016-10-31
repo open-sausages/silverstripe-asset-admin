@@ -9,10 +9,10 @@ SilverStripe\Assets\File:
 SilverStripe\Admin\LeftAndMain:
   extra_requirements_javascript:
     - asset-admin/client/dist/js/bundle.js
-Chillu\GraphQL:
+SilverStripe\GraphQL:
   schema:
     types:
-      DataObjectInterface: 'Chillu\GraphQL\DataObjectInterfaceTypeCreator'
+      DataObjectInterface: 'SilverStripe\GraphQL\DataObjectInterfaceTypeCreator'
       File: 'SilverStripe\AssetAdmin\GraphQL\FileTypeCreator'
       FileInterface: 'SilverStripe\AssetAdmin\GraphQL\FileInterfaceTypeCreator'
       FileInput: 'SilverStripe\AssetAdmin\GraphQL\FileInputTypeCreator'

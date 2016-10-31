@@ -3,10 +3,10 @@ namespace SilverStripe\AssetAdmin\GraphQL;
 
 use SilverStripe\Assets\File;
 use GraphQL\Type\Definition\Type;
-use Chillu\GraphQL\MutationCreator;
+use SilverStripe\GraphQL\MutationCreator;
 use SilverStripe\ORM\Versioning\Versioned;
-use Chillu\GraphQL\Util\CaseInsensitiveFieldAccessor;
-use Chillu\GraphQL\Manager;
+use SilverStripe\GraphQL\Util\CaseInsensitiveFieldAccessor;
+use SilverStripe\GraphQL\Manager;
 
 /**
  * Handles create and update

@@ -5,10 +5,10 @@ use GraphQL\Type\Definition\UnionType;
 use SilverStripe\Assets\File;
 use SilverStripe\Assets\Folder;
 use GraphQL\Type\Definition\Type;
-use Chillu\GraphQL\MutationCreator;
+use SilverStripe\GraphQL\MutationCreator;
 use SilverStripe\ORM\Versioning\Versioned;
-use Chillu\GraphQL\Util\CaseInsensitiveFieldAccessor;
-use Chillu\GraphQL\Manager;
+use SilverStripe\GraphQL\Util\CaseInsensitiveFieldAccessor;
+use SilverStripe\GraphQL\Manager;
 
 
 class CreateFileMutationCreator extends MutationCreator {
