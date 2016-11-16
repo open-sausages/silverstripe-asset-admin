@@ -317,12 +317,12 @@ function mapDispatchToProps(dispatch) {
 // TODO Resolve fragment duplication with Gallery
 const readFilesQuery = gql`query ReadFiles($id:ID!) {
   readFiles(id: $id) {
-    ...allFields
-    ...allFileFields
+    ...FileInterfaceFields
+    ...FileFields
     ...on Folder {
       children {
-        ...allFields
-	      ...allFileFields
+        ...FileInterfaceFields
+        ...FileFields
       },
       parents {
         __typename
@@ -331,28 +331,7 @@ const readFilesQuery = gql`query ReadFiles($id:ID!) {
       }
     }
   }
-}
-fragment allFields on FileInterface {
-  __typename
-  id
-  parentId
-  title
-	type
-  category
-  exists
-  name
-  filename
-  url
-  canView
-  canEdit
-  canDelete
-}
-fragment allFileFields on File {
-	__typename
-	extension
-	size
-}
-`;
+}`;
 const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
   updateFile(id: $id, file: $file) {
     id
@@ -365,7 +344,10 @@ const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
 export default compose(
   graphql(readFilesQuery, {
     options(props) {
-      return { variables: { id: props.params.folderId }};
+      return {
+        variables: { id: props.params.folderId },
+        fragments: Gallery.fragments.file.fragments(),
+      };
     },
     props({ data: { loading, refetch, readFiles } }) {
       return {

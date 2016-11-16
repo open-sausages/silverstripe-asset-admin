@@ -44,6 +44,7 @@ module.exports = {
     'state/breadcrumbs/BreadcrumbsActions': 'BreadcrumbsActions',
     'deep-freeze-strict': 'DeepFreezeStrict',
     'graphql-tag': 'GraphQLTag',
+    'graphql-fragments': 'GraphQLFragments',
     i18n: 'i18n',
     jQuery: 'jQuery',
     'lib/Backend': 'Backend',

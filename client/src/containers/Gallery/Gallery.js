@@ -17,6 +17,7 @@ import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
 import { graphql, withApollo} from 'react-apollo';
 import ApolloClient from 'apollo-client';
 import gql from 'graphql-tag';
+import Fragment from 'graphql-fragments';
 
 function getComparator(field, direction) {
   return (a, b) => {
@@ -612,38 +613,48 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
-// TODO Resolve fragment duplication with AssetAdmin
 const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
   createFolder(folder: $folder) {
-	  ...allFields
-	  ...allFileFields
+    ...FileInterfaceFields
+    ...FileFields
   }
-}
-fragment allFields on FileInterface {
-	__typename
-	id
-	parentId
-	title
-	type
-	category
-	exists
-	name
-	filename
-	url
-	canView
-	canEdit
-	canDelete
-}
-fragment allFileFields on File {
-	__typename
-	extension
-	size
 }`;
+
+Gallery.fragments = {
+  file: new Fragment(gql`
+    fragment FileInterfaceFields on FileInterface {
+      __typename
+      id
+      parentId
+      title
+      type
+      category
+      exists
+      name
+      filename
+      url
+      canView
+      canEdit
+      canDelete
+    }
+    fragment FileFields on File {
+      __typename
+      extension
+      size
+    }`
+  ),
+};
 
 export { Gallery };
 
 export default compose(
-  graphql(createFolderMutation),
+  graphql(createFolderMutation, {
+    options() {
+      return {
+        fragments: Gallery.fragments.file.fragments(),
+      };
+    },
+  }),
   (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)
