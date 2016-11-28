@@ -140,14 +140,36 @@ class AssetAdmin extends SilverStripeComponent {
     this.props.router.push(`/${base}/show/${file.parentId}/edit/${file.id}`);
   }
 
-  handleSubmitEditor(data, action, submitFn) {
-    return submitFn()
-      .then((response) => {
-        // TODO Submit forms via GraphQL and reload dynamically
-        this.props.refetch();
+  /**
+   * Converts a form object to a list of mapped form field names and values
+   */
+  prepDataForGraphQL(data) {
+    let output = [];
 
-        return response;
-      });
+    Object.keys(data).map(function (key) {
+      const line = data[key];
+
+      output.push({
+        'name': key,
+        'value': line
+      })
+    });
+
+    return output;
+  }
+
+  /**
+   * Submit the edit details form
+   */
+  handleSubmitEditor(data, action, submitFn) {
+    this.props.updateFile({
+      variables: {
+        data: this.prepDataForGraphQL(data),
+        action: action,
+      },
+    }).then(({data}) => {
+      console.log('got data', data);
+    });
   }
 
   handleCloseFile() {
@@ -178,7 +200,7 @@ class AssetAdmin extends SilverStripeComponent {
       id: file.id,
     });
 
-    this.props.mutate({
+    this.props.deleteFile({
       mutation: 'DeleteFile',
       variables: {
         id: file.id,
@@ -353,12 +375,14 @@ fragment allFileFields on File {
 	size
 }
 `;
-const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
-  updateFile(id: $id, file: $file) {
-    id
+
+const updateFileMutation = gql`mutation ($data:[fieldSubmission]!, $action:String!) {
+  submitForm(data:$data, action: $action) {
+    messages
   }
 }`;
-const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
+
+const deleteFileMutation = gql`mutation ($id:ID!) {
   deleteFile(id: $id)
 }`;
 
@@ -377,8 +401,8 @@ export default compose(
       };
     },
   }),
-  graphql(updateFileMutation),
-  graphql(deleteFileMutation),
+  graphql(updateFileMutation, {name: 'updateFile'}),
+  graphql(deleteFileMutation, {name: 'deleteFile'}),
   (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)
