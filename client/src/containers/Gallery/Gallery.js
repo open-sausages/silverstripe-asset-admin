@@ -17,7 +17,6 @@ import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
 import { graphql, withApollo} from 'react-apollo';
 import ApolloClient from 'apollo-client';
 import gql from 'graphql-tag';
-import Fragment from 'graphql-fragments';
 
 function getComparator(field, direction) {
   return (a, b) => {
@@ -589,6 +588,33 @@ Gallery.propTypes = {
   errorMessage: React.PropTypes.string,
 };
 
+Gallery.fragments = {
+  fileInterface: gql`
+   fragment FileInterfaceFields on FileInterface {
+    __typename
+    id
+    parentId
+    title
+    type
+    category
+    exists
+    name
+    filename
+    url
+    canView
+    canEdit
+    canDelete
+   }
+    `,
+  file: gql`
+   fragment FileFields on File {
+    __typename
+    extension
+    size
+   }
+    `,
+};
+
 function mapStateToProps(state) {
   const {
     count,
@@ -618,43 +644,14 @@ const createFolderMutation = gql`mutation CreateFolder($folder:FolderInput!) {
     ...FileInterfaceFields
     ...FileFields
   }
+  ${Gallery.fragments.file}
+  ${Gallery.fragments.fileInterface}
 }`;
-
-Gallery.fragments = {
-  file: new Fragment(gql`
-    fragment FileInterfaceFields on FileInterface {
-      __typename
-      id
-      parentId
-      title
-      type
-      category
-      exists
-      name
-      filename
-      url
-      canView
-      canEdit
-      canDelete
-    }
-    fragment FileFields on File {
-      __typename
-      extension
-      size
-    }`
-  ),
-};
 
 export { Gallery };
 
 export default compose(
-  graphql(createFolderMutation, {
-    options() {
-      return {
-        fragments: Gallery.fragments.file.fragments(),
-      };
-    },
-  }),
+  graphql(createFolderMutation),
   (component) => withApollo(component),
   (component) => withRouter(component),
   connect(mapStateToProps, mapDispatchToProps)

@@ -315,7 +315,8 @@ function mapDispatchToProps(dispatch) {
 
 // GraphQL Query
 // TODO Resolve fragment duplication with Gallery
-const readFilesQuery = gql`query ReadFiles($id:ID!) {
+const readFilesQuery = gql`
+  query ReadFiles($id:ID!) {
   readFiles(id: $id) {
     ...FileInterfaceFields
     ...FileFields
@@ -331,7 +332,10 @@ const readFilesQuery = gql`query ReadFiles($id:ID!) {
       }
     }
   }
-}`;
+  }
+  ${Gallery.fragments.fileInterface}
+  ${Gallery.fragments.file}
+`;
 const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
   updateFile(id: $id, file: $file) {
     id
@@ -342,11 +346,10 @@ const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
 }`;
 
 export default compose(
-  graphql(readFilesQuery, {
+  graphqlWithRegister(readFilesQuery, {
     options(props) {
       return {
         variables: { id: props.params.folderId },
-        fragments: Gallery.fragments.file.fragments(),
       };
     },
     props({ data: { loading, refetch, readFiles } }) {
