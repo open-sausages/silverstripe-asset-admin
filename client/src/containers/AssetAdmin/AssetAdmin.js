@@ -15,6 +15,7 @@ import Breadcrumb from 'components/Breadcrumb/Breadcrumb';
 import Toolbar from 'components/Toolbar/Toolbar';
 import { graphql, withApollo } from 'react-apollo';
 import gql from 'graphql-tag';
+import { graphqlWithRegister } from 'lib/GraphQLRegister';
 
 class AssetAdmin extends SilverStripeComponent {
 
@@ -317,21 +318,21 @@ function mapDispatchToProps(dispatch) {
 // TODO Resolve fragment duplication with Gallery
 const readFilesQuery = gql`
   query ReadFiles($id:ID!) {
-  readFiles(id: $id) {
-    ...FileInterfaceFields
-    ...FileFields
-    ...on Folder {
-      children {
-        ...FileInterfaceFields
-        ...FileFields
-      },
-      parents {
-        __typename
-        id
-        title
+    readFiles(id: $id) {
+      ...FileInterfaceFields
+      ...FileFields
+      ...on Folder {
+        children {
+          ...FileInterfaceFields
+          ...FileFields
+        },
+        parents {
+          __typename
+          id
+          title
+        }
       }
     }
-  }
   }
   ${Gallery.fragments.fileInterface}
   ${Gallery.fragments.file}

@@ -49,6 +49,7 @@ module.exports = {
     jQuery: 'jQuery',
     'lib/Backend': 'Backend',
     'lib/Config': 'Config',
+    'lib/GraphQLRegister': 'GraphQLRegister',
     'lib/Injector': 'Injector',
     'lib/ReducerRegister': 'ReducerRegister',
     'lib/Router': 'Router',

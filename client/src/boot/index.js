@@ -6,6 +6,16 @@ import galleryReducer from 'state/gallery/GalleryReducer';
 import queuedFilesReducer from 'state/queuedFiles/QueuedFilesReducer';
 import editorReducer from 'state/editor/EditorReducer';
 import AssetAdmin from 'containers/AssetAdmin/AssetAdmin';
+import gql from 'graphql-tag';
+import graphQLRegister from 'lib/GraphQLRegister';
+
+graphQLRegister.addCustomFragment(
+  'ReadFiles',
+  'readFiles',
+  gql`fragment MyCustomFragment on File {
+      extension
+  }`
+);
 
 document.addEventListener('DOMContentLoaded', () => {
   const sectionConfig = Config.getSection('SilverStripe\\AssetAdmin\\Controller\\AssetAdmin');
