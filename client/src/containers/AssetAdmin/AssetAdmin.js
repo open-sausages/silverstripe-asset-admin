@@ -1,6 +1,6 @@
 import React, { PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, compose } from 'redux';
 import SilverStripeComponent from 'lib/SilverStripeComponent';
 import backend from 'lib/Backend';
 import i18n from 'i18n';
@@ -10,6 +10,8 @@ import Editor from 'containers/Editor/Editor';
 import Gallery from 'containers/Gallery/Gallery';
 import Breadcrumb from 'components/Breadcrumb/Breadcrumb';
 import Toolbar from 'components/Toolbar/Toolbar';
+import { graphql, withApollo } from 'react-apollo';
+import gql from 'graphql-tag';
 
 class AssetAdmin extends SilverStripeComponent {
 
@@ -27,6 +29,8 @@ class AssetAdmin extends SilverStripeComponent {
     this.handleFolderIcon = this.handleFolderIcon.bind(this);
     this.handleBrowse = this.handleBrowse.bind(this);
     this.handleViewChange = this.handleViewChange.bind(this);
+    this.handleUpload = this.handleUpload.bind(this);
+    this.handleCreateFolderSuccess = this.handleCreateFolderSuccess.bind(this);
     this.compare = this.compare.bind(this);
   }
 
@@ -36,10 +40,7 @@ class AssetAdmin extends SilverStripeComponent {
     // Build API callers from the URLs provided in configuration.
     // In time, something like a GraphQL endpoint might be a better way to run.
     this.endpoints = {
-      createFolderApi: this.createEndpoint(config.createFolderEndpoint),
-      readFolderApi: this.createEndpoint(config.readFolderEndpoint, false),
       updateFolderApi: this.createEndpoint(config.updateFolderEndpoint),
-      deleteApi: this.createEndpoint(config.deleteEndpoint),
       historyApi: this.createEndpoint(config.historyEndpoint),
     };
   }
@@ -124,7 +125,7 @@ class AssetAdmin extends SilverStripeComponent {
   handleBackButtonClick(event) {
     event.preventDefault();
     if (this.props.folder) {
-      this.handleOpenFolder(this.props.folder.parentID || 0);
+      this.handleOpenFolder(this.props.folder.parentId || 0);
     } else {
       this.handleOpenFolder(0);
     }
@@ -232,9 +233,9 @@ class AssetAdmin extends SilverStripeComponent {
     }
     return promise
       .then((response) => {
-        if (response && response.record) {
-          this.props.actions.gallery.loadFile(this.props.fileId, response.record);
-        }
+        // TODO Update GraphQL store with new model,
+        // see https://github.com/silverstripe/silverstripe-graphql/issues/14
+        this.props.refetch();
 
         return response;
       });
@@ -267,16 +268,46 @@ class AssetAdmin extends SilverStripeComponent {
       file = this.props.folder;
     }
 
-    // eslint-disable-next-line no-alert
-    if (confirm(i18n._t('AssetAdmin.CONFIRMDELETE'))) {
-      this.props.actions.gallery.deleteItems(this.endpoints.deleteApi, [fileId])
-        .then(() => {
-          // redirect to open parent folder if the file/folder is open and on screen to close it
-          if (file) {
-            this.handleBrowse((file.parent) ? file.parent.id : 0);
-          }
-        });
+    if (!file) {
+      throw new Error(`File selected for deletion cannot be found: ${fileId}`);
     }
+
+    const dataId = this.props.client.dataId({
+      __typename: file.__typename,
+      id: file.id,
+    });
+
+    this.props.mutate({
+      mutation: 'DeleteFile',
+      variables: {
+        id: file.id,
+      },
+      resultBehaviors: [
+        {
+          type: 'DELETE',
+          dataId,
+        },
+      ],
+    }).then(() => {
+      this.props.actions.gallery.deselectFiles([file.id]);
+
+      // redirect to open parent folder if the file/folder is open and on screen to close it
+      if (file) {
+        this.handleBrowse((file.parent) ? file.parent.id : 0);
+      }
+    });
+  }
+
+  handleUpload() {
+    // TODO Update GraphQL store with new model,
+    // see https://github.com/silverstripe/silverstripe-graphql/issues/14
+    this.props.refetch();
+  }
+
+  handleCreateFolderSuccess() {
+    // TODO Update GraphQL store with new model,
+    // see https://github.com/silverstripe/silverstripe-graphql/issues/14
+    this.props.refetch();
   }
 
   /**
@@ -297,21 +328,23 @@ class AssetAdmin extends SilverStripeComponent {
 
     return (
       <Gallery
+        files={this.props.files}
         fileId={this.props.fileId}
         folderId={this.props.folderId}
         folder={this.props.folder}
         type={this.props.type}
         limit={limit}
         page={page}
+        totalCount={this.props.filesTotalCount}
         view={view}
         createFileApiUrl={createFileApiUrl}
         createFileApiMethod={createFileApiMethod}
-        createFolderApi={this.endpoints.createFolderApi}
-        readFolderApi={this.endpoints.readFolderApi}
         updateFolderApi={this.endpoints.updateFolderApi}
-        deleteApi={this.endpoints.deleteApi}
+        onDelete={this.handleDelete}
         onOpenFile={this.handleOpenFile}
         onOpenFolder={this.handleOpenFolder}
+        onSuccessfulUpload={this.handleUpload}
+        onCreateFolderSuccess={this.handleCreateFolderSuccess}
         onSort={this.handleSort}
         onSetPage={this.handleSetPage}
         onViewChange={this.handleViewChange}
@@ -385,6 +418,7 @@ class AssetAdmin extends SilverStripeComponent {
 }
 
 AssetAdmin.propTypes = {
+  mutate: React.PropTypes.func.isRequired,
   dialog: PropTypes.bool,
   sectionConfig: PropTypes.shape({
     url: PropTypes.string,
@@ -403,11 +437,12 @@ AssetAdmin.propTypes = {
   onSubmitEditor: PropTypes.func,
   type: PropTypes.oneOf(['insert', 'select', 'admin']),
   files: PropTypes.array,
+  filesTotalCount: PropTypes.number,
   folder: PropTypes.shape({
     id: PropTypes.number,
     title: PropTypes.string,
     parents: PropTypes.array,
-    parentID: PropTypes.number,
+    parentId: PropTypes.number,
     canView: PropTypes.bool,
     canEdit: PropTypes.bool,
   }),
@@ -415,20 +450,25 @@ AssetAdmin.propTypes = {
 
 AssetAdmin.defaultProps = {
   type: 'admin',
+  query: {
+    sort: '',
+    limit: null, // set to config default in mapStateToProps
+    page: 0,
+  }
 };
 
-function mapStateToProps(state) {
-  const {
-    loading,
-    folder,
-    files,
-  } = state.assetAdmin.gallery;
-
+function mapStateToProps(state, ownProps) {
   return {
-    loading,
-    files,
-    folder,
     securityId: state.config.SecurityID,
+    query: Object.assign(
+      {},
+      {
+        limit: ownProps.sectionConfig.limit,
+        sort: '',
+        page: 0,
+      },
+      ownProps.query
+    ),
   };
 }
 
@@ -441,6 +481,89 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
+// GraphQL Query
+// TODO Resolve fragment duplication with Gallery
+const readFilesQuery = gql`
+  query ReadFiles($id:ID!, $limit:Int!, $offset:Int!, $sortByChildren:[ChildrenSortInputType]) {
+    readFiles(id: $id) {
+      pageInfo {
+        totalCount
+      }
+      edges {
+        node {
+          ...FileInterfaceFields
+          ...FileFields
+          ...on Folder {
+	          children(limit:$limit, offset:$offset, sortBy:$sortByChildren) {
+              pageInfo {
+                totalCount
+              }
+              edges {
+                node {
+                  ...FileInterfaceFields
+                  ...FileFields
+                }
+              }
+            }
+            parents {
+              id
+              title
+            }
+          }
+        }
+      }
+    }
+  }
+  ${Gallery.fragments.fileInterface}
+  ${Gallery.fragments.file}
+`;
+const updateFileMutation = gql`mutation UpdateFile($id:ID!, $file:FileInput!) {
+  updateFile(id: $id, file: $file) {
+   id
+  }
+}`;
+const deleteFileMutation = gql`mutation DeleteFile($id:ID!) {
+  deleteFile(id: $id)
+}`;
+
 export { AssetAdmin };
 
-export default connect(mapStateToProps, mapDispatchToProps)(AssetAdmin);
+export default compose(
+  connect(mapStateToProps, mapDispatchToProps),
+  graphql(readFilesQuery, {
+    options({ sectionConfig, folderId, query: { limit, page, sort } }) {
+      const [sortField, sortDir] = sort.split(',');
+      limit = limit || sectionConfig.limit;
+      page = page || 0;
+      return {
+        variables: {
+          id: folderId,
+          limit,
+          offset: page * limit,
+          sortByChildren: (sortField && sortDir)
+            ? [{ field: sortField, direction: sortDir.toUpperCase() }]
+            : undefined,
+        },
+      };
+    },
+    props({ data: { loading, refetch, readFiles } }) {
+      // Uses same query as search and file list to return a single result (the containing folder)
+      const folder = (readFiles && readFiles.edges[0]) ? readFiles.edges[0].node : null;
+      const files = (folder && folder.children)
+        // Filter nodes because the DELETE resultBehaviour doesn't delete the edge, only the node
+        ? folder.children.edges.map((edge) => edge.node).filter((file) => file)
+        : [];
+      const filesTotalCount = (folder && folder.children) ? folder.children.pageInfo.totalCount : 0;
+      return {
+        loading,
+        refetch,
+        folder,
+        files,
+        filesTotalCount,
+      };
+    },
+  }),
+  graphql(updateFileMutation),
+  graphql(deleteFileMutation),
+  (component) => withApollo(component)
+)(AssetAdmin);

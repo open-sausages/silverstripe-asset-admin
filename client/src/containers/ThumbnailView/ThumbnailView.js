@@ -64,12 +64,12 @@ class ThumbnailView extends Component {
    * @returns {XML|null}
    */
   renderPagination() {
-    if (this.props.count <= this.props.limit) {
+    if (this.props.totalCount <= this.props.limit) {
       return null;
     }
     const props = {
       setPage: this.handleSetPage,
-      maxPage: Math.ceil(this.props.count / this.props.limit),
+      maxPage: Math.ceil(this.props.totalCount / this.props.limit),
       next: this.handleNextPage,
       nextText: i18n._t('Pagination.NEXT', 'Next'),
       previous: this.handlePrevPage,

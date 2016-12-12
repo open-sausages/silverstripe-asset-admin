@@ -142,16 +142,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
                 'method' => 'post',
                 'payloadFormat' => 'urlencoded',
             ],
-            'createFolderEndpoint' => [
-                'url' => Controller::join_links($baseLink, 'api/createFolder'),
-                'method' => 'post',
-                'payloadFormat' => 'urlencoded',
-            ],
-            'readFolderEndpoint' => [
-                'url' => Controller::join_links($baseLink, 'api/readFolder'),
-                'method' => 'get',
-                'responseFormat' => 'json',
-            ],
             'searchEndpoint' => [
                 'url' => Controller::join_links($baseLink, 'api/search'),
                 'method' => 'get',
@@ -160,11 +150,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
             'updateFolderEndpoint' => [
                 'url' => Controller::join_links($baseLink, 'api/updateFolder'),
                 'method' => 'put',
-                'payloadFormat' => 'urlencoded',
-            ],
-            'deleteEndpoint' => [
-                'url' => Controller::join_links($baseLink, 'api/delete'),
-                'method' => 'delete',
                 'payloadFormat' => 'urlencoded',
             ],
             'historyEndpoint' => [
@@ -191,115 +176,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
                 ]
             ],
         ]);
-    }
-
-    /**
-     * Fetches a collection of files by ParentID.
-     *
-     * @param HTTPRequest $request
-     * @return HTTPResponse
-     */
-    public function apiReadFolder(HTTPRequest $request)
-    {
-        $params = $request->requestVars();
-        $items = array();
-        $parentId = null;
-        $folderID = null;
-
-        if (!isset($params['id']) && !strlen($params['id'])) {
-            $this->httpError(400);
-        }
-
-        $folderID = (int)$params['id'];
-        /** @var Folder $folder */
-        $folder = $folderID ? Folder::get()->byID($folderID) : Folder::singleton();
-
-        if (!$folder) {
-            $this->httpError(400);
-        }
-
-        // TODO Limit results to avoid running out of memory (implement client-side pagination)
-        $files = $this->getList()->filter('ParentID', $folderID);
-
-        if ($files) {
-            /** @var File $file */
-            foreach ($files as $file) {
-                if (!$file->canView()) {
-                    continue;
-                }
-
-                $items[] = $this->getObjectFromData($file);
-            }
-        }
-
-        // Build parents (for breadcrumbs)
-        $parents = [];
-        $next = $folder->Parent();
-        while ($next && $next->exists()) {
-            array_unshift($parents, [
-                'id' => $next->ID,
-                'title' => $next->getTitle(),
-                'filename' => $next->getFilename(),
-            ]);
-            if ($next->ParentID) {
-                $next = $next->Parent();
-            } else {
-                break;
-            }
-        }
-
-        $column = 'title';
-        $direction = 'asc';
-        if (isset($params['sort'])) {
-            list($column, $direction) = explode(',', $params['sort']);
-        }
-        $multiplier = ($direction === 'asc') ? 1 : -1;
-
-        usort($items, function ($a, $b) use ($column, $multiplier) {
-            if (!isset($a[$column]) || !isset($b[$column])) {
-                return 0;
-            }
-            if ($a['type'] === 'folder' && $b['type'] !== 'folder') {
-                return -1;
-            }
-            if ($b['type'] === 'folder' && $a['type'] !== 'folder') {
-                return 1;
-            }
-            $numeric = (is_numeric($a[$column]) && is_numeric($b[$column]));
-            $fieldA = ($numeric) ? floatval($a[$column]) : strtolower($a[$column]);
-            $fieldB = ($numeric) ? floatval($b[$column]) : strtolower($b[$column]);
-
-            if ($fieldA < $fieldB) {
-                return $multiplier * -1;
-            }
-
-            if ($fieldA > $fieldB) {
-                return $multiplier;
-            }
-
-            return 0;
-        });
-
-        $page = (isset($params['page'])) ? $params['page'] : 0;
-        $limit = (isset($params['limit'])) ? $params['limit'] : $this->config()->page_length;
-        $filteredItems = array_slice($items, $page * $limit, $limit);
-
-        // Build response
-        $response = new HTTPResponse();
-        $response->addHeader('Content-Type', 'application/json');
-        $response->setBody(json_encode([
-            'files' => $filteredItems,
-            'title' => $folder->getTitle(),
-            'count' => count($items),
-            'parents' => $parents,
-            'parent' => $parents ? $parents[count($parents) - 1] : null,
-            'parentID' => $folder->exists() ? $folder->ParentID : null, // grandparent
-            'folderID' => $folderID,
-            'canEdit' => $folder->canEdit(),
-            'canDelete' => $folder->canArchive(),
-        ]));
-
-        return $response;
     }
 
     /**

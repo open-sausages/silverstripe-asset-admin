@@ -18,7 +18,7 @@ const fileStructure = deepFreeze({
   extension: null,
   filename: null,
   id: 0,
-  lastUpdated: null,
+  lastEdited: null,
   messages: null,
   owner: {
     id: 0,

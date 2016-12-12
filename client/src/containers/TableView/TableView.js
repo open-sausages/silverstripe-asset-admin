@@ -44,7 +44,7 @@ class TableView extends Component {
       'thumbnail',
       'title',
       'size',
-      'lastUpdated',
+      'lastEdited',
     ];
 
     if (this.props.selectableItems) {
@@ -82,12 +82,13 @@ class TableView extends Component {
         customComponent: this.renderTitle,
       },
       {
-        columnName: 'lastUpdated',
+        columnName: 'lastEdited',
         displayName: 'Modified',
         customComponent: this.renderDate,
       },
       {
         columnName: 'size',
+        sortable: false,
         displayName: 'Size',
         customComponent: this.renderSize,
       },
@@ -117,7 +118,7 @@ class TableView extends Component {
       externalSetFilter: () => null,
       externalSetPageSize: () => null,
       externalCurrentPage: this.props.page,
-      externalMaxPage: Math.ceil(this.props.count / this.props.limit),
+      externalMaxPage: Math.ceil(this.props.totalCount / this.props.limit),
       externalSortColumn: sortColumn,
       // TODO change to `sortDirection === 'asc'` when Griddle is version bumped up from 0.7.0
       // reference: https://github.com/GriddleGriddle/Griddle/pull/515
@@ -312,9 +313,14 @@ class TableView extends Component {
   renderThumbnail(props) {
     const url = props.data || props.rowData.url;
 
+    if (props.rowData.type === 'folder') {
+      return (<div className="gallery__table-image--folder" />);
+    }
+
     if (!url) {
       return (<div className="gallery__table-image--error" />);
     }
+
     return (
       <img
         src={url}

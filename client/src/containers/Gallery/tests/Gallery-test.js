@@ -20,13 +20,9 @@ describe('Gallery', () => {
     props = {
       actions: {
         gallery: {
-          addFiles: () => {},
           selectFiles: () => {},
           deselectFiles: () => {},
           setPath: () => {},
-          setFile: () => {},
-          loadFolderContents: () => {},
-          deleteItems: () => {},
         },
         queuedFiles: {
           addQueuedFile: () => null,
@@ -44,7 +40,7 @@ describe('Gallery', () => {
       fileId: null,
       folder: {
         id: 1,
-        parentID: null,
+        parentId: null,
         canView: true,
         canEdit: true,
       },
@@ -151,15 +147,15 @@ describe('Gallery', () => {
   });
 
   describe('renderBackButton()', () => {
-    it('should not render if parentID is not set', () => {
+    it('should not render if parentId is not set', () => {
       const gallery = ReactTestUtils.renderIntoDocument(<Gallery {...props} />);
       const backButton = gallery.renderBackButton();
 
       expect(backButton).toBeNull();
     });
 
-    it('should render a react component if parentID is set', () => {
-      props.folder.parentID = 15;
+    it('should render a react component if parentId is set', () => {
+      props.folder.parentId = 15;
       const gallery = ReactTestUtils.renderIntoDocument(<Gallery {...props} />);
       const backButton = gallery.renderBackButton();
 
@@ -168,23 +164,13 @@ describe('Gallery', () => {
   });
 
   describe('handleBackClick()', () => {
-    it('should open folder with parentID', () => {
-      props.folder.parentID = 15;
+    it('should open folder with parentId', () => {
+      props.folder.parentId = 15;
       props.onOpenFolder = jest.genMockFunction();
       const gallery = ReactTestUtils.renderIntoDocument(<Gallery {...props} />);
 
       gallery.handleBackClick(new Event('click'));
       expect(props.onOpenFolder).toBeCalledWith(15);
-    });
-  });
-
-  describe('componentWillUnmount()', () => {
-    it('should unload folder data when the component is going to unmount', () => {
-      props.actions.gallery.unloadFolderContents = jest.genMockFunction();
-      const gallery = ReactTestUtils.renderIntoDocument(<Gallery {...props} />);
-
-      gallery.componentWillUnmount();
-      expect(props.actions.gallery.unloadFolderContents).toBeCalled();
     });
   });
 
@@ -208,15 +194,6 @@ describe('Gallery', () => {
 
       gallery.handleSuccessfulUpload(file);
       expect(props.actions.queuedFiles.removeQueuedFile).toBeCalled();
-    });
-
-    it('should call an action to add the file to the `files` state', () => {
-      props.actions.gallery.addFiles = jest.genMockFunction();
-
-      const gallery = ReactTestUtils.renderIntoDocument(<Gallery {...props} />);
-
-      gallery.handleSuccessfulUpload(file);
-      expect(props.actions.gallery.addFiles).toBeCalled();
     });
 
     it('should openFile if type is "insert"', () => {
@@ -338,8 +315,8 @@ describe('Gallery', () => {
       expect(gallery.renderBackButton()).toBe(null);
     });
 
-    it('should return a back button if parentID is set.', () => {
-      props.folder = { parentID: 0 };
+    it('should return a back button if parentId is set.', () => {
+      props.folder = { parentId: 0 };
       gallery = ReactTestUtils.renderIntoDocument(
         <Gallery {...props} />
       );
@@ -471,15 +448,6 @@ describe('Gallery', () => {
         <Gallery {...props} />
       );
       gallery.promptFolderName = () => 'newFolder';
-    });
-
-    it('should add folder after successful create API call', () => {
-      gallery.handleCreateFolder({
-        preventDefault: () => {},
-      }, 'newFolder');
-      return promise.then(() => {
-        expect(props.actions.gallery.addFiles).toBeCalled();
-      });
     });
   });
 });

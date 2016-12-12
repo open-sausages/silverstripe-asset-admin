@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 import ReactTestUtils from 'react-addons-test-utils';
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
+import { bindActionCreators, compose } from 'redux';
 import AssetDropzone from 'components/AssetDropzone/AssetDropzone';
 import BulkActions from 'components/BulkActions/BulkActions';
 import ThumbnailView from 'containers/ThumbnailView/ThumbnailView';
@@ -14,10 +14,15 @@ import TableView from 'containers/TableView/TableView';
 import CONSTANTS from 'constants/index';
 import * as galleryActions from 'state/gallery/GalleryActions';
 import * as queuedFilesActions from 'state/queuedFiles/QueuedFilesActions';
+import { graphql, withApollo} from 'react-apollo';
+import ApolloClient from 'apollo-client';
+import gql from 'graphql-tag';
 
 /**
  * List of sorters for tile view, required here because it's rendered outside the tile view
  * component
+ *
+ * @todo Use lowercase identifiers once we can map them in the silverstripe/graphql module
  *
  * @type {array} sorters
  */
@@ -33,12 +38,12 @@ const sorters = [
     label: i18n._t('AssetAdmin.FILTER_TITLE_DESC', 'title z-a'),
   },
   {
-    field: 'created',
+    field: 'lastEdited',
     direction: 'desc',
     label: i18n._t('AssetAdmin.FILTER_DATE_DESC', 'newest'),
   },
   {
-    field: 'created',
+    field: 'lastEdited',
     direction: 'asc',
     label: i18n._t('AssetAdmin.FILTER_DATE_ASC', 'oldest'),
   },
@@ -69,8 +74,7 @@ class Gallery extends Component {
   }
 
   componentDidMount() {
-    // load contents when mounted
-    this.refreshFolderIfNeeded(null, this.props);
+    this.initSortDropdown();
   }
 
   componentWillReceiveProps(nextProps) {
@@ -80,12 +84,22 @@ class Gallery extends Component {
 
       $select.off('change');
     }
-
-    // check if contents need a refresh
-    this.refreshFolderIfNeeded(this.props, nextProps);
   }
 
   componentDidUpdate() {
+    this.initSortDropdown();
+  }
+
+  /**
+   * Gets the element which represents the sorter dropdown for jQuery plugin usage
+   *
+   * @returns {jQuery}
+   */
+  getSortElement() {
+    return $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
+  }
+
+  initSortDropdown() {
     // turn on chosen if required
     if (this.props.view === 'tile') {
       const $select = this.getSortElement();
@@ -101,71 +115,9 @@ class Gallery extends Component {
       // Chosen stops the change event from reaching React so we have to simulate a click.
       $select.on('change', () => ReactTestUtils.Simulate.click($select.find(':selected')[0]));
     }
-
-    this.checkLoadingIndicator();
   }
 
-  componentWillUnmount() {
-    // clear existing folder content, so behaviour of component is predictable for the Modal
-    this.props.actions.gallery.unloadFolderContents();
-  }
-
-  /**
-   * Gets the element which represents the sorter dropdown for jQuery plugin usage
-   *
-   * @returns {jQuery}
-   */
-  getSortElement() {
-    return $(ReactDOM.findDOMNode(this)).find('.gallery__sort .dropdown');
-  }
-
-  /**
-   * Required anti-pattern, because `.cms-content` is the container for the React component.
-   *
-   * Adds or removes the load class from `.cms-content` if it is for the AssetAdmin
-   */
-  checkLoadingIndicator() {
-    const $sectionWrapper = $('.cms-content.AssetAdmin');
-
-    if (this.props.loading) {
-      $sectionWrapper.addClass('loading');
-    } else {
-      $sectionWrapper.removeClass('loading');
-    }
-  }
-
-  /**
-   * Checks if key properties were changed and if they have then start a request to get new data
-   * from the server.
-   * Properties are:
-   *    - folderId
-   *    - limit
-   *    - page
-   *    - sort
-   *
-   * @param {object} prevProps
-   * @param {object} nextProps
-   */
-  refreshFolderIfNeeded(prevProps, nextProps) {
-    if (!prevProps
-      || nextProps.folderId !== prevProps.folderId
-      || nextProps.limit !== prevProps.limit
-      || nextProps.page !== prevProps.page
-      || nextProps.sort !== prevProps.sort
-    ) {
-      // TODO move this to AssetAdmin, anti-pattern for child to set props/state for parent
-      this.props.actions.gallery.deselectFiles();
-      this.props.actions.gallery.loadFolderContents(
-        nextProps.readFolderApi,
-        nextProps.folderId,
-        nextProps.limit,
-        nextProps.page,
-        nextProps.sort
-      );
-    }
-  }
-
-  /**
+   /**
    * Handler for when the user changes the sort order
    *
    * @param {string} value
@@ -243,13 +195,35 @@ class Gallery extends Component {
    * @param {Event} event
    */
   handleCreateFolder(event) {
-    const folderName = this.promptFolderName();
-    if (folderName !== null) {
-      this.props.actions.gallery.createFolder(this.props.createFolderApi, this.props.folderId, folderName)
-        .then(data => {
-          this.refreshFolderIfNeeded(null, this.props);
-          return data;
-        });
+    const name = this.promptFolderName();
+    const parentId = parseInt(this.props.folder.id, 10);
+    if (name) {
+      this.props.mutate({
+        mutation: 'CreateFolder',
+        variables: {
+          folder: {
+            parentId,
+            name,
+          },
+        },
+      }).then((data) => {
+        if (this.props.onCreateFolderSuccess) {
+          this.props.onCreateFolderSuccess(data);
+        }
+      });
+      // TODO Figure out how to use fields with arguments in store path
+      // const dataId = this.props.client.dataId({
+      //   __typename: 'Folder',
+      //   id: parentId,
+      // });
+      // resultBehaviors: [
+      //   {
+      //     type: 'ARRAY_INSERT',
+      //     resultPath: ['createFolder'],
+      //     storePath: [dataId, 'children({"limit:15,"offset":0})'],
+      //     where: 'PREPEND',
+      //   },
+      // ],
     }
     event.preventDefault();
   }
@@ -270,7 +244,12 @@ class Gallery extends Component {
     }
 
     this.props.actions.queuedFiles.removeQueuedFile(fileXhr._queuedId);
-    this.props.actions.gallery.addFiles(json, this.props.count + 1);
+
+    // TODO Update GraphQL store with new model,
+    // see https://github.com/silverstripe/silverstripe-graphql/issues/14
+    if (this.props.onSuccessfulUpload) {
+      this.props.onSuccessfulUpload(json);
+    }
 
     // redirect to open the last uploaded file for 'insert/select modal' type only
     if (this.props.type !== 'admin'
@@ -366,7 +345,7 @@ class Gallery extends Component {
    */
   handleBackClick(event) {
     event.preventDefault();
-    this.props.onOpenFolder(this.props.folder.parentID);
+    this.props.onOpenFolder(this.props.folder.parentId);
   }
 
   /**
@@ -506,7 +485,7 @@ class Gallery extends Component {
       'btn--icon-large',
       'gallery__back',
     ].join(' ');
-    if (this.props.folder.parentID !== null) {
+    if (this.props.folder.parentId !== null) {
       return (
         <button
           className={classes}
@@ -527,8 +506,7 @@ class Gallery extends Component {
    */
   renderBulkActions() {
     const deleteAction = (items) => {
-      const ids = items.map(item => item.id);
-      this.props.actions.gallery.deleteItems(this.props.deleteApi, ids);
+      items.forEach(item => this.props.onDelete(item.id));
     };
     const editAction = (items) => {
       this.props.onOpenFile(items[0].id);
@@ -542,7 +520,7 @@ class Gallery extends Component {
       }
       return action;
     });
-    const selectedFileObjs = this.props.selectedFiles.map(id => this.props.files.find(file => id === file.id));
+    const selectedFileObjs = this.props.selectedFiles.map(id => this.props.files.find(file => file && id === file.id));
 
     if (selectedFileObjs.length > 0 && this.props.type === 'admin') {
       return (
@@ -585,7 +563,8 @@ class Gallery extends Component {
     const GalleryView = (this.props.view === 'table') ? TableView : ThumbnailView;
 
     const allFiles = this.props.files
-      .map((file) => Object.assign({}, file, {
+      // TODO
+      .map((file) => Object.assign({}, file || {}, {
         selected: this.itemIsSelected(file.id),
         highlighted: this.itemIsHighlighted(file.id),
       }));
@@ -601,7 +580,7 @@ class Gallery extends Component {
       type,
       loading,
       page,
-      count,
+      totalCount,
       limit,
       sort,
     } = this.props;
@@ -611,7 +590,7 @@ class Gallery extends Component {
       files,
       loading,
       page,
-      count,
+      totalCount,
       limit,
       sort,
       onSort: this.handleSort,
@@ -709,7 +688,7 @@ const sharedPropTypes = {
       id: PropTypes.number,
     }),
   })).isRequired,
-  count: PropTypes.number,
+  totalCount: PropTypes.number,
   page: PropTypes.number,
   limit: PropTypes.number,
   onOpenFile: PropTypes.func.isRequired,
@@ -726,6 +705,7 @@ const galleryViewPropTypes = Object.assign({}, sharedPropTypes, {
   selectableItems: PropTypes.bool,
   onSelect: PropTypes.func,
   onCancelUpload: PropTypes.func,
+  onDelete: React.PropTypes.func,
   onRemoveErroredUpload: PropTypes.func,
   renderNoItemsNotice: PropTypes.func.isRequired,
 });
@@ -736,6 +716,11 @@ Gallery.defaultProps = Object.assign({}, sharedDefaultProps, {
 });
 
 Gallery.propTypes = Object.assign({}, sharedPropTypes, {
+  client: React.PropTypes.instanceOf(ApolloClient).isRequired,
+  mutate: React.PropTypes.func.isRequired,
+  onUploadSuccess: React.PropTypes.func,
+  onCreateFolderSuccess: React.PropTypes.func,
+  onDelete: React.PropTypes.func,
   type: PropTypes.oneOf(['insert', 'select', 'admin']),
   view: PropTypes.oneOf(['tile', 'table']),
   dialog: PropTypes.bool,
@@ -743,7 +728,7 @@ Gallery.propTypes = Object.assign({}, sharedPropTypes, {
   folderId: PropTypes.number.isRequired,
   folder: PropTypes.shape({
     id: PropTypes.number,
-    parentID: PropTypes.number,
+    parentId: PropTypes.number,
     canView: PropTypes.bool,
     canEdit: PropTypes.bool,
   }),
@@ -758,24 +743,43 @@ Gallery.propTypes = Object.assign({}, sharedPropTypes, {
 
   createFileApiUrl: PropTypes.string,
   createFileApiMethod: PropTypes.string,
-  createFolderApi: PropTypes.func,
-  readFolderApi: PropTypes.func,
-  deleteApi: PropTypes.func,
 });
+
+Gallery.fragments = {
+  fileInterface: gql`
+   fragment FileInterfaceFields on FileInterface {
+    canDelete
+    canEdit
+    canView
+    category
+    exists
+    filename
+    id
+    lastEdited
+    name
+    parentId
+    title
+    type
+    url
+   }
+    `,
+  file: gql`
+   fragment FileFields on File {
+    extension
+    size
+   }
+    `,
+};
 
 function mapStateToProps(state) {
   const {
     loading,
-    count,
-    files,
     selectedFiles,
     errorMessage,
   } = state.assetAdmin.gallery;
 
   return {
     loading,
-    count,
-    files,
     selectedFiles,
     errorMessage,
     queuedFiles: state.assetAdmin.queuedFiles,
@@ -792,6 +796,21 @@ function mapDispatchToProps(dispatch) {
   };
 }
 
+const createFolderMutation = gql`
+  mutation CreateFolder($folder:FolderInput!) {
+    createFolder(folder: $folder) {
+   ...FileInterfaceFields
+   ...FileFields
+  }
+}
+${Gallery.fragments.fileInterface}
+${Gallery.fragments.file}
+`;
+
 export { Gallery, sorters, galleryViewPropTypes, galleryViewDefaultProps };
 
-export default connect(mapStateToProps, mapDispatchToProps)(Gallery);
+export default compose(
+  graphql(createFolderMutation),
+  (component) => withApollo(component),
+  connect(mapStateToProps, mapDispatchToProps)
+)(Gallery);
