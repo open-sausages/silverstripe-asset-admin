@@ -243,7 +243,7 @@ class Gallery extends Component {
       return;
     }
 
-    this.props.actions.queuedFiles.removeQueuedFile(fileXhr._queuedId);
+    this.props.actions.queuedFiles.succeedUpload(fileXhr._queuedId, json[0]);
 
     // TODO Update GraphQL store with new model,
     // see https://github.com/silverstripe/silverstripe-graphql/issues/14
@@ -569,6 +569,10 @@ class Gallery extends Component {
         highlighted: this.itemIsHighlighted(file.id),
       }));
     const queuedFiles = this.props.queuedFiles.items
+      .filter((file) => (
+        // Exclude uploaded files that have been reloaded via graphql
+        !file.id || !allFiles.find((next) => (next.id === file.id))
+      ))
       .map((file) => Object.assign({}, file, {
         uploading: true,
       }));

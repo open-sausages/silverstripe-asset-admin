@@ -55,7 +55,7 @@ function queuedFilesReducer(state = initialState, action) {
       return deepFreeze(Object.assign({}, state, {
         items: state.items.map((file) => {
           if (file.queuedId === action.payload.queuedId) {
-            return Object.assign({}, file, {
+            return Object.assign({}, file, action.payload.json, {
               messages: [{
                 value: i18n._t('AssetAdmin.DROPZONE_SUCCESS_UPLOAD'),
                 type: 'success',
