@@ -61,12 +61,7 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
         // Pass all URLs to the index, for React to unpack
         'show/$FolderID/edit/$FileID' => 'index',
         // API access points with structured data
-        'POST api/createFolder' => 'apiCreateFolder',
         'POST api/createFile' => 'apiCreateFile',
-        'GET api/readFolder' => 'apiReadFolder',
-        'PUT api/updateFolder' => 'apiUpdateFolder',
-        'DELETE api/delete' => 'apiDelete',
-        'GET api/search' => 'apiSearch',
         'GET api/history' => 'apiHistory'
     ];
 
@@ -97,13 +92,8 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
      */
     private static $allowed_actions = array(
         'legacyRedirectForEditView',
-        'apiCreateFolder',
         'apiCreateFile',
-        'apiReadFolder',
-        'apiUpdateFolder',
         'apiHistory',
-        'apiDelete',
-        'apiSearch',
         'fileEditForm',
         'fileHistoryForm',
         'addToCampaignForm',
@@ -142,16 +132,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
                 'method' => 'post',
                 'payloadFormat' => 'urlencoded',
             ],
-            'searchEndpoint' => [
-                'url' => Controller::join_links($baseLink, 'api/search'),
-                'method' => 'get',
-                'responseFormat' => 'json',
-            ],
-            'updateFolderEndpoint' => [
-                'url' => Controller::join_links($baseLink, 'api/updateFolder'),
-                'method' => 'put',
-                'payloadFormat' => 'urlencoded',
-            ],
             'historyEndpoint' => [
                 'url' => Controller::join_links($baseLink, 'api/history'),
                 'method' => 'get',
@@ -176,73 +156,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
                 ]
             ],
         ]);
-    }
-
-    /**
-     * @param HTTPRequest $request
-     *
-     * @return HTTPResponse
-     */
-    public function apiSearch(HTTPRequest $request)
-    {
-        $params = $request->getVars();
-        $list = $this->getList($params);
-
-        $response = new HTTPResponse();
-        $response->addHeader('Content-Type', 'application/json');
-        $response->setBody(json_encode([
-            // Serialisation
-            "files" => array_map(function ($file) {
-                return $this->getObjectFromData($file);
-            }, $list->toArray()),
-            "count" => $list->count(),
-        ]));
-
-        return $response;
-    }
-
-    /**
-     * @param HTTPRequest $request
-     *
-     * @return HTTPResponse
-     */
-    public function apiDelete(HTTPRequest $request)
-    {
-        parse_str($request->getBody(), $vars);
-
-        // CSRF check
-        $token = SecurityToken::inst();
-        if (empty($vars[$token->getName()]) || !$token->check($vars[$token->getName()])) {
-            return new HTTPResponse(null, 400);
-        }
-
-        if (!isset($vars['ids']) || !$vars['ids']) {
-            return (new HTTPResponse(json_encode(['status' => 'error']), 400))
-                ->addHeader('Content-Type', 'application/json');
-        }
-
-        $fileIds = $vars['ids'];
-        $files = $this->getList()->filter("ID", $fileIds)->toArray();
-
-        if (!count($files)) {
-            return (new HTTPResponse(json_encode(['status' => 'error']), 404))
-                ->addHeader('Content-Type', 'application/json');
-        }
-
-        if (!min(array_map(function (File $file) {
-            return $file->canArchive();
-        }, $files))) {
-            return (new HTTPResponse(json_encode(['status' => 'error']), 401))
-                ->addHeader('Content-Type', 'application/json');
-        }
-
-        /** @var File $file */
-        foreach ($files as $file) {
-            $file->doArchive();
-        }
-
-        return (new HTTPResponse(json_encode(['status' => 'file was deleted'])))
-            ->addHeader('Content-Type', 'application/json');
     }
 
     /**
@@ -417,72 +330,6 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
 
         return
             (new HTTPResponse(json_encode($output)))->addHeader('Content-Type', 'application/json');
-    }
-
-
-    /**
-     * Creates a single folder, within an optional parent folder.
-     *
-     * @param HTTPRequest $request
-     * @return HTTPRequest|HTTPResponse
-     */
-    public function apiCreateFolder(HTTPRequest $request)
-    {
-        $data = $request->postVars();
-
-        $class = 'SilverStripe\\Assets\\Folder';
-
-        // CSRF check
-        $token = SecurityToken::inst();
-        if (empty($data[$token->getName()]) || !$token->check($data[$token->getName()])) {
-            return new HTTPResponse(null, 400);
-        }
-
-        // check addchildren permissions
-        /** @var Folder $parentRecord */
-        $parentRecord = null;
-        if (!empty($data['ParentID']) && is_numeric($data['ParentID'])) {
-            $parentRecord = DataObject::get_by_id($class, $data['ParentID']);
-        }
-        $data['Parent'] = $parentRecord;
-        $data['ParentID'] = $parentRecord ? (int)$parentRecord->ID : 0;
-
-        // Build filename
-        $baseFilename = isset($data['Name'])
-            ? basename($data['Name'])
-            : _t('SilverStripe\\AssetAdmin\\Controller\\AssetAdmin.NEWFOLDER', "NewFolder");
-
-        if ($parentRecord && $parentRecord->ID) {
-            $baseFilename = $parentRecord->getFilename() . '/' . $baseFilename;
-        }
-
-        // Ensure name is unique
-        $nameGenerator = $this->getNameGenerator($baseFilename);
-        $filename = null;
-        foreach ($nameGenerator as $filename) {
-            if (! File::find($filename)) {
-                break;
-            }
-        }
-        $data['Name'] = basename($filename);
-
-        // Create record
-        /** @var Folder $record */
-        $record = Injector::inst()->create($class);
-
-        // check create permissions
-        if (!$record->canCreate(null, $data)) {
-            return (new HTTPResponse(null, 403))
-                ->addHeader('Content-Type', 'application/json');
-        }
-
-        $record->ParentID = $data['ParentID'];
-        $record->Name = $record->Title = basename($data['Name']);
-        $record->write();
-
-        $result = $this->getObjectFromData($record);
-
-        return (new HTTPResponse(json_encode($result)))->addHeader('Content-Type', 'application/json');
     }
 
     /**
