@@ -11,6 +11,9 @@ use SilverStripe\GraphQL\Util\CaseInsensitiveFieldAccessor;
 use SilverStripe\GraphQL\Manager;
 
 /**
+ * GraphQL mutation for creating new non-folder file types.
+ *
+ * @see FolderTypeCreator for folder equivalent
  * @todo Allow file upload (https://github.com/silverstripe/silverstripe-graphql/issues/19)
  */
 class CreateFileMutationCreator extends MutationCreator implements OperationResolver
