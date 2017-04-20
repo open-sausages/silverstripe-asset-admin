@@ -1,3 +1,2 @@
 mappings:
-  SiteConfig: SilverStripe\SiteConfig\SiteConfig
-  SiteConfigLeftAndMain: SilverStripe\SiteConfig\SiteConfigLeftAndMain
+  RemoteFileForm: SilverStripe\AssetAdmin\Forms\RemoteFileFormFactory
