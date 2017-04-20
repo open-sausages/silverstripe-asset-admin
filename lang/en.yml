@@ -1,48 +1,23 @@
 en:
-  AssetAdmin:
-    Alignment: Alignment
-    AlignmentCenter: Center
-    AlignmentLeft: 'Left wrap'
-    AlignmentLeftAlone: Left
-    AlignmentRight: 'Right wrap'
-    AlignmentRightAlone: Right
-    AltText: 'Alternative text (alt)'
-    AltTextDescription: 'Shown to screen readers or if image can''t be displayed'
-    AttributesDescription: 'These changes will only affect this particular placement of the file.'
-    Caption: Caption
-    EditLink: 'Edit original file'
-    ImageHeight: Height
-    ImageSpecs: Dimensions
-    ImageWidth: Width
-    Placement: Placement
-    NEWFOLDER: NewFolder
-    NewFile: 'New {file}'
-    TitleTooltip: 'Title text (tooltip)'
-    TitleTooltipDescription: 'For additional information about the image'
-  SilverStripe\Assets\Folder:
-    Filename: 'Folder name'
+  SilverStripe\AssetAdmin\Controller\AssetAdmin:
+    MENUTITLE: Files
   AssetAdmin_DeleteBatchAction:
     TITLE: 'Delete folders'
-  AssetTableField:
-    CREATED: 'First uploaded'
-    LASTEDIT: 'Last changed'
-    PATH: Path
-  CMSMain:
+  SilverStripe\CMS\Controllers\CMSMain:
+    CREATE: Create
     INSERT: 'Insert file'
-  CMSSearch:
+  SilverStripe\CMS\Search\SearchForm:
     FILTERDATEFROM: From
     FILTERDATETO: To
-  Enum:
+  SilverStripe\ORM\FieldType\DBEnum:
     ANY: Any
-  File:
+  SilverStripe\Assets\File:
     PUBLISHED: Published
-  RemoteFileForm:
+  SilverStripe\AssetAdmin\Forms\RemoteFileFormFactory:
     AddMedia: 'Add media'
     Cancel: Cancel
     InsertMedia: 'Insert media'
     UrlDescription: 'Embed Youtube and Vimeo videos, images and other media directly from the web.'
-  SilverStripe\AssetAdmin\Controller\AssetAdmin:
-    MENUTITLE: Files
   SilverStripe\\AssetAdmin\\Controller\\AssetAdmin:
     ADDTOCAMPAIGN: 'Add to campaign'
     AppCategoryArchive: Archive
@@ -72,3 +47,5 @@ en:
   SilverStripe\\AssetAdmin\\Forms\\FileHistoryFormFactory:
     PUBLISHED: Published
     SAVED: Saved
+  SilverStripe\\Assets\\Folder:
+    Filename: 'Folder name'
