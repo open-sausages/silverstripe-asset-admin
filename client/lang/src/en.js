@@ -13,7 +13,6 @@
   "AssetAdmin.CANCEL": "Cancel",
   "AssetAdmin.CONFIRMDELETE": "Are you sure you want to delete this record?",
   "AssetAdmin.CREATED": "First uploaded",
-  "AssetAdmin.ConfirmDelete": "Do you really want to delete this folder and all contained files?",
   "AssetAdmin.DELETE": "Delete",
   "AssetAdmin.DIM": "Dimensions",
   "AssetAdmin.DROPZONE_CANCEL_UPLOAD": "Cancel upload",
