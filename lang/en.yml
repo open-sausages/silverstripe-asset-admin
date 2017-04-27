@@ -3,16 +3,6 @@ en:
     MENUTITLE: Files
   SilverStripe\AssetAdmin\BatchAction\DeleteAssets:
     TITLE: 'Delete folders'
-  SilverStripe\CMS\Controllers\CMSMain:
-    CREATE: Create
-    INSERT: 'Insert file'
-  SilverStripe\CMS\Search\SearchForm:
-    FILTERDATEFROM: From
-    FILTERDATETO: To
-  SilverStripe\ORM\FieldType\DBEnum:
-    ANY: Any
-  SilverStripe\Assets\File:
-    PUBLISHED: Published
   SilverStripe\AssetAdmin\Forms\RemoteFileFormFactory:
     AddMedia: 'Add media'
     Cancel: Cancel
@@ -47,5 +37,3 @@ en:
   SilverStripe\AssetAdmin\Forms\FileHistoryFormFactory:
     PUBLISHED: Published
     SAVED: Saved
-  SilverStripe\Assets\Folder:
-    Filename: 'Folder name'
