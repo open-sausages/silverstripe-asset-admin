@@ -1,7 +1,7 @@
 en:
   SilverStripe\AssetAdmin\Controller\AssetAdmin:
     MENUTITLE: Files
-  AssetAdmin_DeleteBatchAction:
+  SilverStripe\AssetAdmin\BatchAction\DeleteAssets:
     TITLE: 'Delete folders'
   SilverStripe\CMS\Controllers\CMSMain:
     CREATE: Create
@@ -18,7 +18,7 @@ en:
     Cancel: Cancel
     InsertMedia: 'Insert media'
     UrlDescription: 'Embed Youtube and Vimeo videos, images and other media directly from the web.'
-  SilverStripe\\AssetAdmin\\Controller\\AssetAdmin:
+  SilverStripe\AssetAdmin\Controller\AssetAdmin:
     ADDTOCAMPAIGN: 'Add to campaign'
     AppCategoryArchive: Archive
     AppCategoryAudio: Audio
@@ -38,14 +38,14 @@ en:
     UNKNOWN: Unknown
     UNPUBLISH_BUTTON: Unpublish
     UPLOADEDFILE: 'Uploaded file'
-  SilverStripe\\AssetAdmin\\Controller\\AssetAdminFile:
+  SilverStripe\AssetAdmin\Controller\AssetAdminFile:
     MOVEDFOLDER: 'Moved file'
     RENAMEDFILE: 'Replaced file'
     RENAMEDTITLE: 'Updated title to '
-  SilverStripe\\AssetAdmin\\Forms\\FileFormFactory:
+  SilverStripe\AssetAdmin\Forms\FileFormFactory:
     OTHER_ACTIONS: 'Other actions'
-  SilverStripe\\AssetAdmin\\Forms\\FileHistoryFormFactory:
+  SilverStripe\AssetAdmin\Forms\FileHistoryFormFactory:
     PUBLISHED: Published
     SAVED: Saved
-  SilverStripe\\Assets\\Folder:
+  SilverStripe\Assets\Folder:
     Filename: 'Folder name'
