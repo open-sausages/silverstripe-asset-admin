@@ -29,3 +29,14 @@ Name: assetadminmodals
 SilverStripe\Admin\ModalController:
   extensions:
     - SilverStripe\AssetAdmin\Extensions\RemoteFileModalExtension
+---
+Name: assetadminwebpack
+---
+SilverStripe\Core\Injector\Injector:
+  AssetAdminWebpack:
+    class: SilverStripe\Admin\Webpack\Webpack
+    constructor:
+      0: 'silverstripe/asset-admin'
+SilverStripe\AssetAdmin\Controller\AssetAdmin:
+  properties:
+    webpack: %$AssetAdminWebpack
