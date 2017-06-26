@@ -25,6 +25,7 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\RequestHandler;
+use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Core\Manifest\ModuleLoader;
 use SilverStripe\Forms\Form;
@@ -142,13 +143,18 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
      */
     private static $max_thumbnail_bytes = 200000;
 
+    private $webpack;
+
+    public function setWebpack($webpack)
+    {
+        $this->webpack = $webpack;
+    }
     /**
      * Set up the controller
      */
     public function init()
     {
         parent::init();
-
         $module = ModuleLoader::getModule('silverstripe/asset-admin');
         Requirements::add_i18n_javascript($module->getRelativeResourcePath('client/lang'), false, true);
         Requirements::javascript($module->getRelativeResourcePath("client/dist/js/bundle.js"));

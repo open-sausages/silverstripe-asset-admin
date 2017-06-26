@@ -96,5 +96,8 @@
     "plugins": [
       "transform-object-rest-spread"
     ]
+  },
+  "webpack-dev-server": {
+    "port": 3001
   }
 }

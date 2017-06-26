@@ -1,0 +1,11 @@
+---
+Name: test
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Admin\Webpack\Webpack.assetadmin:
+    class: SilverStripe\Admin\Webpack\Webpack
+    constructor:
+      0: 'silverstripe/asset-admin'
+  SilverStripe\AssetAdmin\Controller\AssetAdmin:
+    properties:
+      Webpack: %$SilverStripe\Admin\Webpack\Webpack.assetadmin
