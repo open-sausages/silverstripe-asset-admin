@@ -8,9 +8,9 @@ use SilverStripe\Assets\Shortcodes\FileLink;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\CMS\Model\SiteTreeFileExtension;
 use SilverStripe\Control\Director;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\ArrayListInterface;
 use SilverStripe\ORM\DataExtension;
-use SilverStripe\ORM\SS_List;
+use SilverStripe\ORM\ListInterface;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\Versioned\DataDifferencer;
 
@@ -177,11 +177,11 @@ class AssetAdminFile extends DataExtension
     /**
      * Get the list of all nested files in use
      *
-     * @return SS_List
+     * @return ListInterface
      */
     public function getFilesInUse()
     {
-        $list = ArrayList::create();
+        $list = ArrayListInterface::create();
 
         // Check SiteTreeFileExtension
         if ($this->owner instanceof Folder) {

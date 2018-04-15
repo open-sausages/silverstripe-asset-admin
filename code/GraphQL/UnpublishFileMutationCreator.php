@@ -3,12 +3,12 @@
 namespace SilverStripe\AssetAdmin\GraphQL;
 
 use SilverStripe\Assets\File;
-use SilverStripe\i18n\i18nEntityProvider;
+use SilverStripe\Internationalisation\EntityProvider;
 use SilverStripe\Versioned\RecursivePublishable;
 use SilverStripe\Versioned\Versioned;
 use SilverStripe\Security\Member;
 
-class UnpublishFileMutationCreator extends PublicationMutationCreator implements i18nEntityProvider
+class UnpublishFileMutationCreator extends PublicationMutationCreator implements EntityProvider
 {
     /**
      * @var string

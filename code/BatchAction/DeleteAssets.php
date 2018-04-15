@@ -4,7 +4,7 @@ namespace SilverStripe\AssetAdmin\BatchAction;
 
 use SilverStripe\Admin\CMSBatchAction;
 use SilverStripe\Core\Convert;
-use SilverStripe\ORM\SS_List;
+use SilverStripe\ORM\ListInterface;
 
 /**
  * Delete multiple {@link Folder} records (and the associated filesystem nodes).
@@ -17,7 +17,7 @@ class DeleteAssets extends CMSBatchAction
         return _t(__CLASS__.'.TITLE', 'Delete folders');
     }
 
-    public function run(SS_List $records)
+    public function run(ListInterface $records)
     {
         $status = array(
             'modified'=>array(),

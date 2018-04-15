@@ -12,7 +12,7 @@ use SilverStripe\Forms\FileUploadReceiver;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\Validator;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\ORM\SS_List;
+use SilverStripe\ORM\ListInterface;
 
 /**
  * Represents a file upload field with ReactJS based frontend.
@@ -90,9 +90,9 @@ class UploadField extends FormField implements FileHandleField
      *
      * @param string $name The internal field name, passed to forms.
      * @param string $title The field label.
-     * @param SS_List $items Items assigned to this field
+     * @param ListInterface $items Items assigned to this field
      */
-    public function __construct($name, $title = null, SS_List $items = null)
+    public function __construct($name, $title = null, ListInterface $items = null)
     {
         $this->constructFileUploadReceiver();
 

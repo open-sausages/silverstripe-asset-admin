@@ -30,7 +30,7 @@ use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\FormFactory;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\ArrayListInterface;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\ORM\ValidationResult;
@@ -571,7 +571,7 @@ class AssetAdmin extends LeftAndMain implements PermissionProvider
      * @todo Implement on client
      *
      * @param bool $unlinked
-     * @return ArrayList
+     * @return ArrayListInterface
      */
     public function breadcrumbs($unlinked = false)
     {

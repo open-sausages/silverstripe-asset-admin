@@ -10,7 +10,7 @@ use Silverstripe\Assets\Dev\TestAssetStore;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\Form;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\ArrayListInterface;
 
 /**
  * @skipUpgrade
@@ -50,7 +50,7 @@ class UploadFieldTest extends SapphireTest
         $field->setFolderName('/');
         /** @var Image $image */
         $image = $this->objFromFixture(Image::class, 'image1');
-        $field->setItems(new ArrayList([$image]));
+        $field->setItems(new ArrayListInterface([$image]));
         $admin = AssetAdmin::create();
         Form::create($admin, 'MyForm', FieldList::create($field), FieldList::create());
 

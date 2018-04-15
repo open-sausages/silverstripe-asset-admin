@@ -5,11 +5,11 @@ namespace SilverStripe\AssetAdmin\GraphQL;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Definition\EnumType;
 use SilverStripe\AssetAdmin\Controller\AssetAdminFile;
-use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Control\HTTPResponseException;
 use SilverStripe\GraphQL\TypeCreator;
 use SilverStripe\Assets\File;
 use SilverStripe\ORM\Filterable;
-use SilverStripe\ORM\ArrayList;
+use SilverStripe\ORM\ArrayListInterface;
 use SilverStripe\Assets\Folder;
 use SilverStripe\Forms\DateField;
 
@@ -89,16 +89,16 @@ class FileFilterInputTypeCreator extends TypeCreator
         // ID filtering
         if (isset($filter['id']) && (int)$filter['id'] > 0) {
             $list = $list->filter('ID', $filter['id']);
-            
+
             if ($list->count() === 0) {
-                throw new HTTPResponse_Exception(_t(
+                throw new HTTPResponseException(_t(
                     __CLASS__ . '.FileNotFound',
                     'File or Folder could not be found'
                 ));
             }
         } elseif (isset($filter['id']) && (int)$filter['id'] === 0) {
             // Special case for root folder
-            $list = new ArrayList([new Folder([
+            $list = new ArrayListInterface([new Folder([
                 'ID' => 0,
             ])]);
         }
@@ -167,7 +167,7 @@ class FileFilterInputTypeCreator extends TypeCreator
                 $list = $list->filter('ID', $id);
             } else {
                 // Special case for root folder, since filter by ID = 0 will return an empty list
-                $list = new ArrayList([new Folder([
+                $list = new ArrayListInterface([new Folder([
                     'ID' => 0,
                 ])]);
             }
