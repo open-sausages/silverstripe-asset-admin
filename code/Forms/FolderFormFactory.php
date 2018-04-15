@@ -16,7 +16,7 @@ class FolderFormFactory extends AssetFormFactory
         $this->beforeExtending('updateFormFields', function (FieldList $fields) {
             $preview = $fields->fieldByName('PreviewImage');
             $name = $fields->dataFieldByName('Name');
-            
+
             if ($name) {
                 $name->setTitle(_t(__CLASS__.'.FOLDERNAME', 'Folder name'));
             }

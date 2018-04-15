@@ -9,7 +9,7 @@ use SilverStripe\Control\HTTPResponseException;
 use SilverStripe\GraphQL\TypeCreator;
 use SilverStripe\Assets\File;
 use SilverStripe\ORM\Filterable;
-use SilverStripe\ORM\ArrayListInterface;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\Assets\Folder;
 use SilverStripe\Forms\DateField;
 
@@ -98,7 +98,7 @@ class FileFilterInputTypeCreator extends TypeCreator
             }
         } elseif (isset($filter['id']) && (int)$filter['id'] === 0) {
             // Special case for root folder
-            $list = new ArrayListInterface([new Folder([
+            $list = new ArrayList([new Folder([
                 'ID' => 0,
             ])]);
         }
@@ -167,7 +167,7 @@ class FileFilterInputTypeCreator extends TypeCreator
                 $list = $list->filter('ID', $id);
             } else {
                 // Special case for root folder, since filter by ID = 0 will return an empty list
-                $list = new ArrayListInterface([new Folder([
+                $list = new ArrayList([new Folder([
                     'ID' => 0,
                 ])]);
             }

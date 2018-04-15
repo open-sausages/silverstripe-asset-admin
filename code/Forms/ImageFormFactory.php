@@ -96,25 +96,25 @@ class ImageFormFactory extends FileFormFactory
             if (isset($context['Record'])) {
                 $record = $context['Record'];
             }
-            
+
             if (!$record) {
                 return;
             }
             /** @var FieldList $fields */
             $fields = $form->Fields();
-            
+
             $dimensions = $fields->fieldByName('Editor.Placement.Dimensions');
             $width = null;
             $height = null;
-            
+
             if ($dimensions) {
                 $width = $record->getWidth();
                 $height = $record->getHeight();
             }
-    
+
             if ($width && $height) {
                 $ratio = $width / $height;
-        
+
                 $dimensions->setSchemaComponent('ProportionConstraintField');
                 $dimensions->setSchemaState([
                     'data' => [

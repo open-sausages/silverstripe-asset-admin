@@ -8,7 +8,7 @@ use SilverStripe\Assets\Shortcodes\FileLink;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\CMS\Model\SiteTreeFileExtension;
 use SilverStripe\Control\Director;
-use SilverStripe\ORM\ArrayListInterface;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\ListInterface;
 use SilverStripe\Versioned\Versioned;
@@ -181,7 +181,7 @@ class AssetAdminFile extends DataExtension
      */
     public function getFilesInUse()
     {
-        $list = ArrayListInterface::create();
+        $list = ArrayList::create();
 
         // Check SiteTreeFileExtension
         if ($this->owner instanceof Folder) {
