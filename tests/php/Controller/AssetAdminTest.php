@@ -232,9 +232,9 @@ class AssetAdminTest extends FunctionalTest
                 'Title' => 'new',
                 'SecurityID' => SecurityToken::inst()->getValue(),
                 'CanViewType' => $allowedFile->CanViewType,
-                'ViewerGroups' => 'unchanged',
+                'ViewerGroups' => null,
                 'CanEditType' => $allowedFile->CanEditType,
-                'EditorGroups' => 'unchanged',
+                'EditorGroups' => null,
             ],
             $this->session
         );
@@ -248,9 +248,9 @@ class AssetAdminTest extends FunctionalTest
                 'Title' => 'new',
                 'SecurityID' => SecurityToken::inst()->getValue(),
                 'CanViewType' => $disallowedFile->CanViewType,
-                'ViewerGroups' => 'unchanged',
+                'ViewerGroups' => null,
                 'CanEditType' => $disallowedFile->CanEditType,
-                'EditorGroups' => 'unchanged',
+                'EditorGroups' => null,
             ],
             $this->session
         );
@@ -293,9 +293,9 @@ class AssetAdminTest extends FunctionalTest
                 'Name' => 'folder1-renamed',
                 'SecurityID' => SecurityToken::inst()->getValue(),
                 'CanViewType' => 'Inherit',
-                'ViewerGroups' => 'unchanged',
+                'ViewerGroups' => null,
                 'CanEditType' => 'Inherit',
-                'EditorGroups' => 'unchanged',
+                'EditorGroups' => null,
             ]
         );
         $this->assertFalse($response->isError());
