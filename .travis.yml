@@ -26,16 +26,21 @@ env:
 
 matrix:
   include:
-    - php: 7.1
+    - php: 7.2
       env: PHPUNIT_TEST=1 PHPCS_TEST=1
-    - php: 7.1
+    - php: 7.3
       env: BEHAT_TEST=1
-    - php: 7.1
+    - php: 7.3
       env: NPM_TEST=1
     - php: 7.3
       env:
         - DB=PGSQL
         - PHPUNIT_TEST=1
+    - php: 7.4snapshot
+      env:
+        - PHPUNIT_TEST=1
+  allow_failures:
+    - php: 7.4snapshot
 
 before_script:
 # Extra $PATH
